@@ -188,44 +188,56 @@ public class Problem {
     }
 
     public Map<String, String> getSubmissions(String problemTitle) throws IOException {
-        Map<String, String> submissionMap = new HashMap<>(16);
+        Map<String, String> submissionMap = new HashMap<>(12);
         int offset = 0;
         int limit = 10;
-        boolean hasNext = false;
+        boolean hasNext = true;
+        String lastKey = "";
 
-        String submissionsUrl = String.format(URL.SUBMISSIONS_FORMAT, problemTitle, offset, limit);
+        List<String> languageList = Config.getSingleton().getLanguageList();
+        Map<String, Boolean>languageMap = new HashMap<>(12);
+        for (int i = 0; i < languageList.size(); i++){
+            languageMap.put(languageList.get(i), false);
+        }
 
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-        Request request = new Request.Builder()
-                .addHeader("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
-                .url(submissionsUrl)
-                .build();
-        Response response = okHttpClient.newCall(request).execute();
+        while(hasNext){
+            String submissionsUrl = String.format(URL.SUBMISSIONS_FORMAT, problemTitle, offset, limit, lastKey);
+            out.println("submissionsUrl = " + submissionsUrl);
 
-        if (response != null){
-            String responseData = response.body().string();
+            OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .build();
+            Request request = new Request.Builder()
+                    .addHeader("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
+                    .url(submissionsUrl)
+                    .build();
+            Response response = okHttpClient.newCall(request).execute();
 
-            Gson gson = new Gson();
-            SubmissionBean submissionBean = gson.fromJson(responseData, SubmissionBean.class);
-            List<SubmissionBean.SubmissionsDumpBean> submissionsDumpList = submissionBean.getSubmissions_dump();
+            if (response != null){
+                String responseData = response.body().string();
 
-            List<String> languageList = Config.getSingleton().getLanguageList();
-            for (int i = 0; i < languageList.size(); i++) {
-                String language = languageList.get(i);
-                for (int j = 0; j < submissionsDumpList.size(); j++) {
-                    SubmissionBean.SubmissionsDumpBean submission = submissionsDumpList.get(j);
-                    if (submission.getStatus_display().equals("Accepted") && language.equals(submission.getLang())) {
+                Gson gson = new Gson();
+                SubmissionBean submissionBean = gson.fromJson(responseData, SubmissionBean.class);
+                List<SubmissionBean.SubmissionsDumpBean> submissionsDumpList = submissionBean.getSubmissions_dump();
+
+                for (int i = 0; i < submissionsDumpList.size(); i++){
+                    SubmissionBean.SubmissionsDumpBean submission = submissionsDumpList.get(i);
+                    String language = submission.getLang();
+                    if (languageMap.containsKey(language) && languageMap.get(language) == false && submission.getStatus_display().equals("Accepted")){
                         submissionMap.put(language, getSubmissionCode(submission.getUrl()));
-                        break;
+                        languageMap.put(language, true);
                     }
                 }
+
+                hasNext = submissionBean.isHas_next();
+                offset = (++offset) * limit;
+                lastKey = submissionBean.getLast_key();
+
+            }else{
+                //TODO
             }
-        }else{
-            //TODO
         }
 
         return submissionMap;
