@@ -25,6 +25,7 @@ public class Problem {
     private static volatile List<ProblemBean.StatStatusPairsBean> acProblems;
     private static volatile List<String> problemNameList;
     private static volatile List<String> problemFormatNameList;
+    private static volatile Map<Integer, List<String>> submissionLanguageMap;
 
     private Problem() {
     }
@@ -256,5 +257,12 @@ public class Problem {
         }
         matcher.appendTail(sb);
         return sb.toString();
+    }
+
+    public Map<Integer, List<String>>getSubmissionLanguage(){
+        if (submissionLanguageMap == null){
+            submissionLanguageMap = new HashMap<>();
+        }
+        return submissionLanguageMap;
     }
 }

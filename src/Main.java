@@ -1,6 +1,3 @@
-import bean.ConfigBean;
-import com.google.gson.Gson;
-
 import java.io.IOException;
 
 import static java.lang.System.out;
@@ -15,7 +12,9 @@ public class Main {
         Login login = new Login(usrname, passwd);
         Problem problem = Problem.getInstance();
         Storage storage = new Storage();
+
         login.doLogin();
         storage.write2Disk(problem.getAllAcProblems());
+
     }
 }

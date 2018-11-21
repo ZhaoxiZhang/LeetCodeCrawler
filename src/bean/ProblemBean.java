@@ -4,12 +4,12 @@ import java.util.List;
 
 public class ProblemBean {
     /**
-     * user_name : ZYoung
-     * num_solved : 108
-     * num_total : 937
-     * ac_easy : 48
-     * ac_medium : 51
-     * ac_hard : 9
+     * user_name : xxx
+     * num_solved : xxx
+     * num_total : xxx
+     * ac_easy : xx
+     * ac_medium : xx
+     * ac_hard : xx
      * stat_status_pairs : [{"stat":{"question_id":981,"question__article__live":true,"question__article__slug":"delete-columns-to-make-sorted","question__title":"Delete Columns to Make Sorted","question__title_slug":"delete-columns-to-make-sorted","question__hide":false,"total_acs":2215,"total_submitted":3025,"frontend_question_id":944,"is_new_question":true},"status":null,"difficulty":{"level":2},"paid_only":false,"is_favor":false,"frequency":0,"progress":0}]
      * frequency_high : 0
      * frequency_mid : 0

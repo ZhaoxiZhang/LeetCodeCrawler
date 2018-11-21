@@ -1,0 +1,140 @@
+import bean.ProblemBean;
+
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static java.lang.System.out;
+
+public class MarkdownGenerator {
+    public static final String MARKDOWNTITLE = "| # | Title | Solution | Acceptance | Difficulty | Paid-Only\n" +
+            "|:--:|:-----:|:---------:|:----:|:----:|:----:|";
+    public static final String LANGUAG_FORM = "[%s](%s) ";
+    public static final String MARKDOWN_FORM = "| %s | %s | %s | %s | %s | %s |";
+    public static final String SHIELD = "<p align=\"center\"><img width=\"300\" src=\"https://raw.githubusercontent.com/ZhaoxiZhang/LeetCodeCrawler/master/pictures/site-logo.png\"></p>\n" +
+            "<p align=\"center\">\n" +
+            "    <img src=\"https://img.shields.io/badge/%d/%d-Solved/Total-blue.svg\" alt=\"\">\n" +
+            "    <img src=\"https://img.shields.io/badge/Easy-%d-green.svg\" alt=\"\">\n" +
+            "    <img src=\"https://img.shields.io/badge/Medium-%d-orange.svg\" alt=\"\">\n" +
+            "    <img src=\"https://img.shields.io/badge/Hard-%d-red.svg\" alt=\"\">\n" +
+            "</p>\n";
+
+
+    public String generateMarkdown() throws IOException {
+        StringBuilder markdownString = new StringBuilder();
+        int easy = 0;
+        int medium = 0;
+        int hard = 0;
+        Problem problemInstance = Problem.getInstance();
+        List<ProblemBean.StatStatusPairsBean> acProblems = problemInstance.getAllAcProblems();
+        Collections.sort(acProblems, (o1, o2) -> o1.getStat().getQuestion_id() - o2.getStat().getQuestion_id());
+        Map<Integer, List<String>> submissionLanguageMap = problemInstance.getSubmissionLanguage();
+        int totalProblems = problemInstance.getAllProblems().size();
+
+        markdownString.append(MARKDOWNTITLE + "\n");
+        for (int i = 0; i < acProblems.size(); i++) {
+            ProblemBean.StatStatusPairsBean problem = acProblems.get(i);
+            int Id = problem.getStat().getQuestion_id();
+            String Number = problemInstance.formId(totalProblems, Id);
+            String Title = problem.getStat().getQuestion__title_slug();
+
+            StringBuilder SolutionTmp = new StringBuilder();
+            List<String> languageList = submissionLanguageMap.get(Id);
+            for (int j = 0; j < languageList.size(); j++) {
+                String language = languageList.get(j);
+                String languageSolution = String.format(MarkdownGenerator.LANGUAG_FORM, leetCodeName2LanguageName(language), "./" + Number + "." + Title + "/" + Title + "." + language);
+                SolutionTmp.append(languageSolution);
+            }
+            String Solution = SolutionTmp.toString();
+
+            DecimalFormat df = new DecimalFormat("#0.00");
+            String Acceptance = df.format((double) problem.getStat().getTotal_acs() / problem.getStat().getTotal_submitted() * 100) + "%";
+
+            int difficulty = problem.getDifficulty().getLevel();
+            switch (difficulty){
+                case 1:
+                    easy++;
+                    break;
+                case 2:
+                    medium++;
+                    break;
+                case 3:
+                    hard++;
+                    break;
+            }
+            String Difficulty = DifficultyLevel2String(difficulty);
+
+            String Paid_only = problem.isPaid_only() ? "Yes" : " ";
+
+            String row = String.format(MARKDOWN_FORM, Number, Title, Solution, Acceptance, Difficulty, Paid_only);
+
+            out.println(row);
+
+            markdownString.append(row + "\n");
+        }
+
+        String shieldString = String.format(SHIELD, easy + medium + hard, totalProblems, easy, medium, hard);
+
+        markdownString.insert(0, shieldString);
+        return markdownString.toString();
+    }
+
+    private String leetCodeName2LanguageName(String leetcodeName) {
+        String res;
+        switch (leetcodeName) {
+            case "cpp":
+                res = "C++";
+                break;
+            case "java":
+                res = "Java";
+                break;
+            case "c":
+                res = "C";
+                break;
+            case "csharp":
+                res = "C#";
+                break;
+            case "javascript":
+                res = "JavaScript";
+                break;
+            case "python":
+                res = "Python";
+                break;
+            case "python3":
+                res = "Python3";
+                break;
+            case "ruby":
+                res = "Ruby";
+                break;
+            case "swift":
+                res = "Swift";
+                break;
+            case "golang":
+                res = "Go";
+                break;
+            default:
+                res = "";
+        }
+        return res;
+    }
+
+    private String DifficultyLevel2String(int level) {
+        String res;
+        switch (level) {
+            case 1:
+                res = "Easy";
+                break;
+            case 2:
+                res = "Medium";
+                break;
+            case 3:
+                res = "Hard";
+                break;
+            default:
+                res = "";
+        }
+        return res;
+    }
+}

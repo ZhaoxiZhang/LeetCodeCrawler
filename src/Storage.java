@@ -1,6 +1,7 @@
 import bean.ProblemBean;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +26,12 @@ public class Storage {
             writeProblem2Disk(problem, problemTitle, problemDirectory);
 
             //写入代码
-            writeSubmissions2Disk(problem, problemTitle, problemDirectory);
+            writeSubmissions2Disk(problem, problemId, problemTitle, problemDirectory);
         }
+
+        //写入Markdown
+        MarkdownGenerator markdownGenerator = new MarkdownGenerator();
+        writeMarkdown2Disk(markdownGenerator.generateMarkdown());
     }
 
     public void createDirectory(String path){
@@ -40,6 +45,7 @@ public class Storage {
         File file = new File(filePath);
         if (!file.exists()){
             file.getParentFile().mkdirs();
+
             file.createNewFile();
         }
         FileOutputStream fos = new FileOutputStream(file);
@@ -58,10 +64,17 @@ public class Storage {
         writeUtil(problemDirectory + "/" + problemTitle + ".md", problemDescription);
     }
 
-    public void writeSubmissions2Disk(Problem problem, String problemTitle, String problemDirectory) throws IOException {
+    public void writeSubmissions2Disk(Problem problem, int problemId, String problemTitle, String problemDirectory) throws IOException {
         Map<String, String>submissionMap = problem.getSubmissions(problemTitle);
+        List<String>submissionLanguageList = new ArrayList<>();
         for (Map.Entry<String, String>entry : submissionMap.entrySet()){
             writeSubmission2Disk(problemTitle, problemDirectory, entry.getKey(), entry.getValue());
+            submissionLanguageList.add(entry.getKey());
         }
+        problem.getSubmissionLanguage().put(problemId, submissionLanguageList);
+    }
+
+    public void writeMarkdown2Disk(String markdownString) throws IOException {
+        writeUtil(outputDir + "/README.md", markdownString);
     }
 }
