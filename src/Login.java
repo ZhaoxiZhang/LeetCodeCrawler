@@ -4,7 +4,6 @@ import org.jsoup.Jsoup;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.System.out;
@@ -85,17 +84,6 @@ public class Login {
             }
         }
 
-        /*
-        Set<String>names = headers.names();
-        for (String val : names){
-            out.println(val);
-            List<String>values = headers.values(val);
-            for (String value : values){
-                out.println(value);
-            }
-            out.println("------------------------------------");
-        }
-        */
 
         if (LEETCODE_SESSION != null){
             success = true;

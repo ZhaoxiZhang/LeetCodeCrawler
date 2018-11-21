@@ -13,8 +13,9 @@ public class Main {
         Problem problem = Problem.getInstance();
         Storage storage = new Storage();
 
-        login.doLogin();
-        storage.write2Disk(problem.getAllAcProblems());
+        if (login.doLogin()){
+            storage.write2Disk(problem.getAllAcProblems());
+        }
 
     }
 }
