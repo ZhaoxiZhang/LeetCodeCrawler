@@ -8,7 +8,7 @@ import java.util.Map;
 import static java.lang.System.out;
 
 public class Storage {
-    public static String outputDir;
+    public static String outputDir = "./Problems";
 
 
     public void write2Disk(List<ProblemBean.StatStatusPairsBean>acProblemList) throws IOException {

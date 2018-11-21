@@ -13,13 +13,13 @@ public class MarkdownGenerator {
             "|:--:|:-----:|:---------:|:----:|:----:|:----:|";
     public static final String LANGUAG_FORM = "[%s](%s) ";
     public static final String MARKDOWN_FORM = "| %s | %s | %s | %s | %s | %s |";
-    public static final String SHIELD = "<p align=\"center\"><img width=\"300\" src=\"https://raw.githubusercontent.com/ZhaoxiZhang/LeetCodeCrawler/master/pictures/site-logo.png\"></p>\n" +
+    public static final String SHIELD = "<p align=\"center\"><img width=\"300\" src=\"https://raw.githubusercontent.com/ZhaoxiZhang/LeetCodeCrawler/master/pictures/site-logo.png\"></p>\n\n" +
             "<p align=\"center\">\n" +
             "    <img src=\"https://img.shields.io/badge/%d/%d-Solved/Total-blue.svg\" alt=\"\">\n" +
             "    <img src=\"https://img.shields.io/badge/Easy-%d-green.svg\" alt=\"\">\n" +
             "    <img src=\"https://img.shields.io/badge/Medium-%d-orange.svg\" alt=\"\">\n" +
             "    <img src=\"https://img.shields.io/badge/Hard-%d-red.svg\" alt=\"\">\n" +
-            "</p>\n";
+            "</p>\n\n";
 
 
     public String generateMarkdown() throws IOException {
@@ -113,6 +113,12 @@ public class MarkdownGenerator {
                 break;
             case "golang":
                 res = "Go";
+                break;
+            case "scala":
+                res = "Scala";
+                break;
+            case "kotlin":
+                res = "Kotlin";
                 break;
             default:
                 res = "";
