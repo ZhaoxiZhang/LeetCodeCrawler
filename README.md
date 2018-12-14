@@ -21,7 +21,7 @@ git clone git@github.com:ZhaoxiZhang/LeetCodeCrawler.git
 }
 ```
 - `username`和`password`对应你的 LeetCode 账号和密码
-- `language`对应于你在 LeetCode 刷题使用的编程语言，可多选，选填字段如下（请严格按照如下字段填写）：
+- `language`对应于你在 LeetCode 刷题使用的编程语言，可多选，选填字段如下（**请严格按照如下字段填写**）：
     - cpp
     - java
     - c

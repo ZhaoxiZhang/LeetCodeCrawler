@@ -33,7 +33,7 @@ public final class OkHttpHelper {
         return result;
     }
 
-    private synchronized Response getInternal(String url, Headers headers) throws IOException {
+    private Response getInternal(String url, Headers headers) throws IOException {
         Request request = new Request.Builder()
                 .headers(headers)
                 .url(url)
@@ -42,7 +42,7 @@ public final class OkHttpHelper {
         return call.execute();
     }
 
-    private synchronized Response postInternal(String url, RequestBody requestBody, Headers headers) throws IOException {
+    private Response postInternal(String url, RequestBody requestBody, Headers headers) throws IOException {
         Request request = new Request.Builder()
                 .headers(headers)
                 .post(requestBody)

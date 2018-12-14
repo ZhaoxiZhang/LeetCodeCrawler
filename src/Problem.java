@@ -185,7 +185,7 @@ public class Problem {
      * @return 某个题目对于 config 文件指定的语言提交的代码
      * @throws IOException
      */
-    public synchronized Map<String, String> getSubmissions(String problemTitle) throws IOException {
+    public Map<String, String> getSubmissions(String problemTitle) throws IOException {
         out.println("pre problemTitle = " + problemTitle);
         //保存语言对应的提交代码
         Map<String, String> submissionMap = new HashMap<>(12);
