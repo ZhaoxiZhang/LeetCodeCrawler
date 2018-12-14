@@ -1,19 +1,21 @@
 import bean.ProblemBean;
 import bean.ProblemContentBean;
 import bean.SubmissionBean;
-import com.google.gson.Gson;
-import okhttp3.*;
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,13 +23,15 @@ import static java.lang.System.out;
 
 public class Problem {
     private static volatile Problem problem;
-    private static volatile ProblemBean problems;
-    private static volatile List<ProblemBean.StatStatusPairsBean> acProblems;
-    private static volatile List<String> problemNameList;
-    private static volatile List<String> problemFormatNameList;
-    private static volatile Map<Integer, List<String>> submissionLanguageMap;
+    private ProblemBean problems;
+    private List<ProblemBean.StatStatusPairsBean> acProblems;
+    private List<String> problemNameList;
+    private List<String> problemFormatNameList;
+    private Map<Integer, List<String>> submissionLanguageMap;
+    private OkHttpHelper okHttpHelper;
 
     private Problem() {
+        okHttpHelper = OkHttpHelper.getSingleton();
     }
 
     public static Problem getInstance() {
@@ -47,22 +51,16 @@ public class Problem {
     public List<ProblemBean.StatStatusPairsBean> getAllProblems() throws IOException {
         ProblemBean instance = problems;
         if (instance == null) {
-            OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS)
-                    .build();
-            Request request = new Request.Builder()
-                    .addHeader("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
-                    .url(URL.PROBLEMS)
-                    .build();
 
-            Response response = okHttpClient.newCall(request).execute();
+            Headers headers = new Headers.Builder()
+                    .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
+                    .build();
+            Response response = okHttpHelper.get(URL.PROBLEMS, headers);
+
             if (response.body() != null) {
                 String responseData = response.body().string();
 
-                Gson gson = new Gson();
-                Problem.problems = gson.fromJson(responseData, ProblemBean.class);
+                instance = problems = okHttpHelper.fromJson(responseData, ProblemBean.class);
 
                 response.close();
 
@@ -71,24 +69,24 @@ public class Problem {
                 out.println("没有获取到题目信息");
             }
         }
-        return problems.getStat_status_pairs();
+        return instance.getStat_status_pairs();
     }
 
     public List<ProblemBean.StatStatusPairsBean> getAllAcProblems() throws IOException {
         List<ProblemBean.StatStatusPairsBean> instance = acProblems;
         if (instance == null) {
-            acProblems = new ArrayList<>();
+            instance = acProblems = new ArrayList<>();
             List<ProblemBean.StatStatusPairsBean> problems = getAllProblems();
             ProblemBean.StatStatusPairsBean problem;
             for (int i = 0; i < problems.size(); i++) {
                 problem = problems.get(i);
                 if (problem.getStatus() != null && problem.getStatus().equals("ac")) {
-                    acProblems.add(problem);
+                    instance.add(problem);
                 }
             }
         }
 
-        return acProblems;
+        return instance;
     }
 
     //得到的题目名称格式类似于 001.two-sum
@@ -124,27 +122,23 @@ public class Problem {
     public String getProblemDescription(String problemTitle) throws IOException {
         String problemDescriptionString = "";
         String postBody = "query{question(titleSlug:\"" + problemTitle + "\") {content}}\n";
-        Request graphqlRequest = new Request.Builder()
-                .addHeader("Content-Type", "application/graphql")
-                .addHeader("Referer", "https://leetcode.com/problems/" + problemTitle)
-                .addHeader("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken)
-                .addHeader("x-csrftoken", Login.csrftoken)
-                .post(RequestBody.create(MediaType.parse("application/graphql; charset=utf-8"), postBody))
-                .url(URL.GRAPHQL)
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/graphql; charset=utf-8"), postBody);
+        Headers headers = new Headers.Builder()
+                .add("Content-Type", "application/graphql")
+                .add("Referer", "https://leetcode.com/problems/" + problemTitle)
+                .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
+                .add("x-csrftoken", Login.csrftoken)
                 .build();
-        OkHttpClient okHttpClient = new OkHttpClient().newBuilder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-        Response graphqlResponse = okHttpClient.newCall(graphqlRequest).execute();
+
+        Response graphqlResponse = okHttpHelper.post(URL.GRAPHQL, requestBody, headers);
+
         if (graphqlResponse != null) {
-            Gson gson = new Gson();
-            out.println(graphqlResponse.body().toString());
-            ProblemContentBean problemContentBean = gson.fromJson(graphqlResponse.body().string(), ProblemContentBean.class);
+            ProblemContentBean problemContentBean = okHttpHelper.fromJson(graphqlResponse.body().string(), ProblemContentBean.class);
             problemDescriptionString = problemContentBean.getData().getQuestion().getContent();
+
+            graphqlResponse.close();
         }else{
-            //TODO
+            //TODO 输出错误信息
         }
         return problemDescriptionString;
     }
@@ -154,17 +148,11 @@ public class Problem {
         out.println(url);
         String codeString = null;
 
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .connectTimeout(3, TimeUnit.MINUTES)
-                .readTimeout(3, TimeUnit.MINUTES)
-                .writeTimeout(3, TimeUnit.MINUTES)
-                .build();
-        Request request = new Request.Builder()
-                .addHeader("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
-                .url(url)
+        Headers headers = new Headers.Builder()
+                .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
                 .build();
 
-        Response response = okHttpClient.newCall(request).execute();
+        Response response = okHttpHelper.get(url, headers);
 
         if (response != null) {
             String htmlString = response.body().string();
@@ -179,6 +167,8 @@ public class Problem {
                     break;
                 }
             }
+
+            response.close();
         } else {
             //TODO 错误信息处理
         }
@@ -188,7 +178,16 @@ public class Problem {
         return codeString;
     }
 
-    public Map<String, String> getSubmissions(String problemTitle) throws IOException {
+
+    /**
+     * 在获取提交的代码的时候服务器可能返回403，一直重试可成功，原因进一步查找中
+     * @param problemTitle
+     * @return 某个题目对于 config 文件指定的语言提交的代码
+     * @throws IOException
+     */
+    public synchronized Map<String, String> getSubmissions(String problemTitle) throws IOException {
+        out.println("pre problemTitle = " + problemTitle);
+        //保存语言对应的提交代码
         Map<String, String> submissionMap = new HashMap<>(12);
         int offset = 0;
         int limit = 10;
@@ -196,6 +195,8 @@ public class Problem {
         String lastKey = "";
 
         List<String> languageList = Config.getSingleton().getLanguageList();
+
+        //保存某个语言的代码是否已经抓取
         Map<String, Boolean>languageMap = new HashMap<>(12);
         for (int i = 0; i < languageList.size(); i++){
             languageMap.put(languageList.get(i), false);
@@ -203,25 +204,33 @@ public class Problem {
 
         while(hasNext){
             String submissionsUrl = String.format(URL.SUBMISSIONS_FORMAT, problemTitle, offset, limit, lastKey);
-            out.println("submissionsUrl = " + submissionsUrl);
 
-            OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS)
+            Headers headers = new Headers.Builder()
+                    .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
                     .build();
-            Request request = new Request.Builder()
-                    .addHeader("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
-                    .url(submissionsUrl)
-                    .build();
-            Response response = okHttpClient.newCall(request).execute();
+
+            Response response = okHttpHelper.get(submissionsUrl, headers);
 
             if (response != null){
                 String responseData = response.body().string();
 
-                Gson gson = new Gson();
-                SubmissionBean submissionBean = gson.fromJson(responseData, SubmissionBean.class);
+                SubmissionBean submissionBean = okHttpHelper.fromJson(responseData, SubmissionBean.class);
                 List<SubmissionBean.SubmissionsDumpBean> submissionsDumpList = submissionBean.getSubmissions_dump();
+
+                if (submissionsDumpList == null){
+                    out.println("submissionsUrl = " + submissionsUrl);
+                    out.println("problemTitle = " + problemTitle);
+                    out.println("responseData = " + responseData);
+                    out.println("status message = " + response.message());
+                    out.println("message code = " + response.code());
+                    /*
+                     * 当获取不到提交记录时休眠一小段时间后进行重复尝试,服务器返回如下信息
+                     * responseData = {"detail":"You do not have permission to perform this action."}
+                     * status message = Forbidden
+                     * message code = 403
+                     */
+                    continue;
+                }
 
                 for (int i = 0; i < submissionsDumpList.size(); i++){
                     SubmissionBean.SubmissionsDumpBean submission = submissionsDumpList.get(i);
@@ -236,6 +245,7 @@ public class Problem {
                 offset = (++offset) * limit;
                 lastKey = submissionBean.getLast_key();
 
+                response.close();
             }else{
                 //TODO
             }
@@ -259,9 +269,15 @@ public class Problem {
         return sb.toString();
     }
 
+
+    /**
+     * 在 Storage 类中的 writeSubmissions2Disk 方法会对 submissionLanguageMap 填充数据
+     * 因此需要在 writeSubmissions2Disk 方法执行后调用方有效
+     * @return submissionLanguageMap 某道题对于 config 文件中指定的语言中真实提交的语言
+     */
     public Map<Integer, List<String>>getSubmissionLanguage(){
         if (submissionLanguageMap == null){
-            submissionLanguageMap = new HashMap<>();
+            submissionLanguageMap = new ConcurrentHashMap<>();
         }
         return submissionLanguageMap;
     }

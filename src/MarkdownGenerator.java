@@ -11,6 +11,7 @@ import static java.lang.System.out;
 public class MarkdownGenerator {
     public static final String MARKDOWNTITLE = "| # | Title | Solution | Acceptance | Difficulty | Paid-Only\n" +
             "|:--:|:-----:|:---------:|:----:|:----:|:----:|";
+    public static final String TITLE_FORM = "[%s](%s)";
     public static final String LANGUAG_FORM = "[%s](%s) ";
     public static final String MARKDOWN_FORM = "| %s | %s | %s | %s | %s | %s |";
     public static final String SHIELD = "<p align=\"center\"><img width=\"300\" src=\"https://raw.githubusercontent.com/ZhaoxiZhang/LeetCodeCrawler/master/pictures/site-logo.png\"></p>\n\n" +
@@ -38,13 +39,21 @@ public class MarkdownGenerator {
             ProblemBean.StatStatusPairsBean problem = acProblems.get(i);
             int Id = problem.getStat().getQuestion_id();
             String Number = problemInstance.formId(totalProblems, Id);
-            String Title = problem.getStat().getQuestion__title_slug();
+            String problemTitle = problem.getStat().getQuestion__title();
+            String problemSlug = problem.getStat().getQuestion__title_slug();
+            String Title = String.format(MarkdownGenerator.TITLE_FORM, problemTitle, "./" + Number + "." + problemSlug + "/" + problemSlug + ".md");
 
             StringBuilder SolutionTmp = new StringBuilder();
             List<String> languageList = submissionLanguageMap.get(Id);
+
+            if (languageList == null){
+                out.println("list is null id = " + Id + " title = " + problemTitle);
+                continue;
+            }
+
             for (int j = 0; j < languageList.size(); j++) {
                 String language = languageList.get(j);
-                String languageSolution = String.format(MarkdownGenerator.LANGUAG_FORM, leetCodeName2LanguageName(language), "./" + Number + "." + Title + "/" + Title + "." + language);
+                String languageSolution = String.format(MarkdownGenerator.LANGUAG_FORM, leetCodeName2LanguageName(language), "./" + Number + "." + problemSlug + "/" + problemSlug + "." + language);
                 SolutionTmp.append(languageSolution);
             }
             String Solution = SolutionTmp.toString();

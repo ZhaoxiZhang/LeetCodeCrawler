@@ -4,8 +4,6 @@ import com.google.gson.Gson;
 import java.io.*;
 import java.util.List;
 
-import static java.lang.System.out;
-
 public final class Config {
     private static volatile Config instance;
 
@@ -31,6 +29,10 @@ public final class Config {
         return result;
     }
 
+
+    /**
+     * 获取 config.json 文件的数据
+     */
     private ConfigBean getConfigBean() throws IOException {
         if (configBean == null){
             StringBuilder configString = new StringBuilder();
@@ -45,7 +47,6 @@ public final class Config {
             bufferedReader.close();
             Gson gson = new Gson();
             configBean = gson.fromJson(configString.toString(), ConfigBean.class);
-
         }
         return configBean;
     }

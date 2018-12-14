@@ -16,15 +16,22 @@ public class Login {
     public static String __cfduid;
     public static String LEETCODE_SESSION;
 
+    private OkHttpHelper okHttpHelper;
+
     private String usrname;
     private String passwd;
     public Login(String usrname, String passwd){
         this.usrname = usrname;
         this.passwd = passwd;
+        okHttpHelper = OkHttpHelper.getSingleton();
     }
 
+
+    /**
+     * 模拟登陆 LeetCodo，登陆过程分析见：https://www.cnblogs.com/ZhaoxiCheung/p/9302510.html
+     */
     public boolean doLogin() throws IOException {
-        boolean success = false;
+        boolean success;
         Connection.Response response = Jsoup.connect(URL.LOGIN)
                 .method(Connection.Method.GET)
                 .execute();
