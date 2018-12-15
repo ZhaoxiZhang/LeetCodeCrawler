@@ -4,6 +4,7 @@ import bean.ResultBean;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class MarkdownGenerator {
         int hard = 0;
         Problem problemInstance = Problem.getSingleton();
         List<ProblemBean.StatStatusPairsBean> acProblems = problemInstance.getAllAcProblems();
-        Collections.sort(acProblems, (o1, o2) -> o1.getStat().getQuestion_id() - o2.getStat().getQuestion_id());
+        Collections.sort(acProblems, Comparator.comparingInt(o -> o.getStat().getQuestion_id()));
         Map<Integer, List<String>> submissionLanguageMap = problemInstance.getSubmissionLanguage();
         int totalProblems = problemInstance.getAllProblems().size();
 
@@ -43,7 +44,7 @@ public class MarkdownGenerator {
             String Number = problemInstance.formId(totalProblems, Id);
             String problemTitle = problem.getStat().getQuestion__title();
             String problemSlug = problem.getStat().getQuestion__title_slug();
-            String Title = String.format(MarkdownGenerator.TITLE_FORM, problemTitle, "./" + Number + "." + problemSlug + "/" + problemSlug + ".md");
+            String Title = String.format(MarkdownGenerator.TITLE_FORM, problemTitle, Storage.outputDir + "/" + Number + "." + problemSlug + "/" + problemSlug + ".md");
 
             StringBuilder SolutionTmp = new StringBuilder();
             List<String> languageList = submissionLanguageMap.get(Id);
@@ -55,7 +56,7 @@ public class MarkdownGenerator {
 
             for (int j = 0; j < languageList.size(); j++) {
                 String language = languageList.get(j);
-                String languageSolution = String.format(MarkdownGenerator.LANGUAG_FORM, leetCodeName2LanguageName(language), "./" + Number + "." + problemSlug + "/" + problemSlug + "." + language);
+                String languageSolution = String.format(MarkdownGenerator.LANGUAG_FORM, leetCodeName2LanguageName(language), Storage.outputDir + "/" + Number + "." + problemSlug + "/" + problemSlug + "." + language);
                 SolutionTmp.append(languageSolution);
             }
             String Solution = SolutionTmp.toString();

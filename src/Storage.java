@@ -3,16 +3,13 @@ import bean.ResultBean;
 import com.google.gson.Gson;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Storage {
-    public static String outputDir = "./Problems";
+    public static String outputDir = ".";
 
 
     public void write2Disk(List<ProblemBean.StatStatusPairsBean> acProblemList) throws IOException, InterruptedException {
@@ -21,9 +18,9 @@ public class Storage {
         List<ResultBean>restoredResultList = result.getRestoredResultList();
 
         //按题目 Id 从小到大排序
-        Collections.sort(acProblemList, (o1, o2) -> o1.getStat().getQuestion_id() - o2.getStat().getQuestion_id());
+        Collections.sort(acProblemList, Comparator.comparingInt(o -> o.getStat().getQuestion_id()));
         //按题目 Id 从小到大排序
-        Collections.sort(restoredResultList, ((o1, o2) -> o1.getId() - o2.getId()));
+        Collections.sort(restoredResultList, (Comparator.comparingInt(ResultBean::getId)));
 
         int totalProblems = problem.getAllProblems().size();
         int availableProcessors = Runtime.getRuntime().availableProcessors();

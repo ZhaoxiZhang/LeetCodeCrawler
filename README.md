@@ -17,7 +17,7 @@ git clone git@github.com:ZhaoxiZhang/LeetCodeCrawler.git
     "username": "leetcode@leetcode",
     "password": "leetcode",
     "language": ["cpp", "java"],
-    "outputDir": "./Problems"
+    "outputDir": "."
 }
 ```
 - `username`和`password`对应你的 LeetCode 账号和密码
@@ -34,7 +34,7 @@ git clone git@github.com:ZhaoxiZhang/LeetCodeCrawler.git
     - golang
     - scala
     - kotlin
-- `outputDir`字段选填，可为空，默认为`./Problems`表示你希望存放源码文件的目录
+- `outputDir`字段表示你希望存放源码文件的目录,默认为`.`，即当前目录
 
 运行主程序`Main.java`，后期会考虑直接把项目打包成一个可执行文件，方便运行
 

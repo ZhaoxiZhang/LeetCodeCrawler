@@ -2,5 +2,5 @@
     "username": "leetcode@leetcode.com",
     "password": "leetcode",
     "language": ["cpp", "java"],
-    "outputDir": "./Problems"
+    "outputDir": "."
 }

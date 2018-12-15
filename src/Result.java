@@ -33,8 +33,11 @@ public class Result {
     //TODO 初始 result.json 文件不存在进行检查
     public List<ResultBean> getRestoredResultList() throws IOException {
         if (restoredResultList == null){
-            File file = new File("./result.json");
-            if (!file.exists()) file.createNewFile();
+            File file = new File(Storage.outputDir + "/result.json");
+            if (!file.exists()){
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
 
             FileInputStream fis = new FileInputStream(file);
             InputStreamReader reader = new InputStreamReader(fis);
