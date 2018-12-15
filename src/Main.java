@@ -1,6 +1,8 @@
 import java.io.IOException;
 
 public class Main {
+    public static boolean isDebug = false;
+
     public static void main(String... args) throws IOException, InterruptedException {
         Config config = Config.getSingleton();
         String usrname = config.getUsername();

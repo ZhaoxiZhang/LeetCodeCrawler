@@ -8,6 +8,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static java.lang.System.out;
+
 public class Storage {
     public static String outputDir = ".";
 
@@ -50,7 +52,8 @@ public class Storage {
                 ProblemBean.StatStatusPairsBean problemStatStatus = acProblemList.get(finalI);
                 int problemId = problemStatStatus.getStat().getQuestion_id();
                 String problemTitle = problemStatStatus.getStat().getQuestion__title_slug();
-                String problemDirectory = outputDir + "/" + problem.formId(totalProblems, problemId) + "." + problemTitle;
+                String formId = problem.formId(totalProblems, problemId);
+                String problemDirectory = outputDir + "/" + formId + "." + problemTitle;
 
                 //之前未保存本地的题目进行写入
                 if (finalHasExist == false){
@@ -71,6 +74,7 @@ public class Storage {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                out.println(formId + "-[" + problemStatStatus.getStat().getQuestion__title() + "] finished");
             });
 
         }
@@ -89,6 +93,7 @@ public class Storage {
         String savedResultListString = gson.toJson(savedResultList);
         writeResult2Disk(savedResultListString);
 
+        out.println("Crawl Successfully");
     }
 
     public void createDirectory(String path) {

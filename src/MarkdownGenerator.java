@@ -50,7 +50,7 @@ public class MarkdownGenerator {
             List<String> languageList = submissionLanguageMap.get(Id);
 
             if (languageList == null){
-                out.println("list is null id = " + Id + " title = " + problemTitle);
+                if (Main.isDebug)   out.println("list is null id = " + Id + " title = " + problemTitle);
                 continue;
             }
 
@@ -82,7 +82,7 @@ public class MarkdownGenerator {
 
             String row = String.format(MARKDOWN_FORM, Number, Title, Solution, Acceptance, Difficulty, Paid_only);
 
-            out.println(row);
+            if (Main.isDebug)   out.println(row);
 
             markdownString.append(row + "\n");
 

@@ -77,17 +77,17 @@ public class Login {
 
         Response loginResponse = client.newCall(request).execute();
 
-        out.println(loginResponse.message());
+        if (Main.isDebug)   out.println(loginResponse.message());
 
         Headers headers = loginResponse.headers();
         List<String>cookies = headers.values("Set-Cookie");
         for (String cookie : cookies){
             int found = cookie.indexOf("LEETCODE_SESSION");
             if (found > -1){
-                out.println(cookie);
+                if (Main.isDebug)   out.println(cookie);
                 int last = cookie.indexOf(";");
                 LEETCODE_SESSION = cookie.substring("LEETCODE_SESSION".length() + 1, last);
-                out.println(LEETCODE_SESSION);
+                if (Main.isDebug)   out.println(LEETCODE_SESSION);
             }
         }
 

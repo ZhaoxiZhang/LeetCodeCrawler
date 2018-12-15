@@ -146,7 +146,7 @@ public class Problem {
 
     public String getSubmissionCode(String submissionUrl) throws IOException {
         String url = URL.LEETCODE + submissionUrl;
-        out.println(url);
+        if (Main.isDebug)   out.println(url);
         String codeString = null;
 
         Headers headers = new Headers.Builder()
@@ -187,7 +187,7 @@ public class Problem {
      * @throws IOException
      */
     public synchronized Map<String, String> getSubmissions(String problemTitle, ResultBean resultBean) throws IOException {
-        out.println("pre problemTitle = " + problemTitle);
+        if (Main.isDebug)   out.println("pre problemTitle = " + problemTitle);
         //保存语言对应的提交代码
         Map<String, String> submissionMap = new HashMap<>();
         int offset = 0;
@@ -232,11 +232,13 @@ public class Problem {
                 List<SubmissionBean.SubmissionsDumpBean> submissionsDumpList = submissionBean.getSubmissions_dump();
 
                 if (submissionsDumpList == null){
-                    out.println("submissionsUrl = " + submissionsUrl);
-                    out.println("problemTitle = " + problemTitle);
-                    out.println("responseData = " + responseData);
-                    out.println("status message = " + response.message());
-                    out.println("message code = " + response.code());
+                    if (Main.isDebug){
+                        out.println("submissionsUrl = " + submissionsUrl);
+                        out.println("problemTitle = " + problemTitle);
+                        out.println("responseData = " + responseData);
+                        out.println("status message = " + response.message());
+                        out.println("message code = " + response.code());
+                    }
                     /*
                      * 当获取不到提交记录时休眠一小段时间后进行重复尝试,服务器返回如下信息
                      * responseData = {"detail":"You do not have permission to perform this action."}
