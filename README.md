@@ -6,12 +6,9 @@
 本项目启发自[leetcode-spider](https://github.com/Ma63d/leetcode-spider),其使用 JavaScript 编写，因不再继续维护，且本人暂时对 JavaScript 未过多了解，因此用 Java 重实现了爬取。
 
 ## 使用
-clone项目到本地
-```
-git clone git@github.com:ZhaoxiZhang/LeetCodeCrawler.git
-```
+下载[LeetCodeCrawler.jar](https://github.com/ZhaoxiZhang/LeetCodeCrawler/raw/master/LeetCodeCrawler.jar)到本地
 
-建立好如下`config.json`文件（可直接对 repo 的`config.json`进行更改：
+建立好如下`config.json`文件（可直接对 repo 的`config.json`进行更改)，`config.json`文件需与`LeetCodeCrawler.jar`放置于同一目录下：
 ```
 {
     "username": "leetcode@leetcode",
@@ -36,9 +33,10 @@ git clone git@github.com:ZhaoxiZhang/LeetCodeCrawler.git
     - kotlin
 - `outputDir`字段表示你希望存放源码文件的目录,默认为`.`，即当前目录
 
-运行主程序`Main.java`，后期会考虑直接把项目打包成一个可执行文件，方便运行
+运行`java -jar LeetCodeCrawler.jar`
 
 ## 效果
 具体效果以及爬取的具体数据可参看我的repo：[LeetCode](https://github.com/ZhaoxiZhang/Algorithm/tree/master/LeetCode), 自己使用的这个工具爬取的 LeetCode 题目和提交的源码。
 <img src="./pictures/1.png"/>
 <img src="./pictures/2.png"/>
+<img src="./pictures/3.png"/>
