@@ -1,45 +1,76 @@
 import bean.ProblemBean;
+import bean.ResultBean;
+import com.google.gson.Gson;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.System.out;
-
 public class Storage {
     public static String outputDir = "./Problems";
 
 
     public void write2Disk(List<ProblemBean.StatStatusPairsBean> acProblemList) throws IOException, InterruptedException {
-        Problem problem = Problem.getInstance();
+        Problem problem = Problem.getSingleton();
+        Result result = Result.getSingleton();
+        List<ResultBean>restoredResultList = result.getRestoredResultList();
+
+        //按题目 Id 从小到大排序
+        Collections.sort(acProblemList, (o1, o2) -> o1.getStat().getQuestion_id() - o2.getStat().getQuestion_id());
+        //按题目 Id 从小到大排序
+        Collections.sort(restoredResultList, ((o1, o2) -> o1.getId() - o2.getId()));
+
         int totalProblems = problem.getAllProblems().size();
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         ExecutorService fixedThreadPool = Executors.newFixedThreadPool(2 * availableProcessors);
+
+        int restoredResultIndex = 0;
         for (int i = 0; i < acProblemList.size(); i++) {
+            //查找已经 AC 的题目在之前是否有数据保存在本地
+            boolean hasExist = false;
+            ResultBean resultBean = null;
+            if (restoredResultIndex < restoredResultList.size()){
+                int restoredResultIndexId = restoredResultList.get(restoredResultIndex).getId();
+                int acProblemListIndexId = acProblemList.get(i).getStat().getQuestion_id();
+
+                if (restoredResultIndexId == acProblemListIndexId){
+                    hasExist = true;
+                    restoredResultIndex++;
+                }
+
+                resultBean = hasExist ? restoredResultList.get(restoredResultIndex - 1) : null;
+            }
+
             int finalI = i;
+            boolean finalHasExist = hasExist;
+            ResultBean finalResultBean = resultBean;
             fixedThreadPool.execute(() -> {
                 ProblemBean.StatStatusPairsBean problemStatStatus = acProblemList.get(finalI);
                 int problemId = problemStatStatus.getStat().getQuestion_id();
                 String problemTitle = problemStatStatus.getStat().getQuestion__title_slug();
                 String problemDirectory = outputDir + "/" + problem.formId(totalProblems, problemId) + "." + problemTitle;
 
-                //创建题目目录
-                createDirectory(problemDirectory);
+                //之前未保存本地的题目进行写入
+                if (finalHasExist == false){
+                    //创建题目目录
+                    createDirectory(problemDirectory);
 
-                //写入题目
-                try {
-                    writeProblem2Disk(problem, problemTitle, problemDirectory);
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    //写入题目
+                    try {
+                        writeProblem2Disk(problem, problemTitle, problemDirectory);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 //写入代码
                 try {
-                    writeSubmissions2Disk(problem, problemId, problemTitle, problemDirectory);
+                    writeSubmissions2Disk(problem, problemId, problemTitle, problemDirectory, finalResultBean);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -54,6 +85,13 @@ public class Storage {
         //写入Markdown
         MarkdownGenerator markdownGenerator = new MarkdownGenerator();
         writeMarkdown2Disk(markdownGenerator.generateMarkdown());
+
+        //写入 result.json
+        Gson gson = new Gson();
+        List<ResultBean>savedResultList = result.getSavedResultList();
+        String savedResultListString = gson.toJson(savedResultList);
+        writeResult2Disk(savedResultListString);
+
     }
 
     public void createDirectory(String path) {
@@ -93,9 +131,15 @@ public class Storage {
         writeUtil(problemDirectory + "/" + problemTitle + ".md", problemDescription);
     }
 
-    public void writeSubmissions2Disk(Problem problem, int problemId, String problemTitle, String problemDirectory) throws IOException{
-        Map<String, String> submissionMap = problem.getSubmissions(problemTitle);
-        List<String> submissionLanguageList = new ArrayList<>();
+    public void writeSubmissions2Disk(Problem problem, int problemId, String problemTitle, String problemDirectory, ResultBean resultBean) throws IOException{
+        Map<String, String> submissionMap = problem.getSubmissions(problemTitle, resultBean);
+        List<String> submissionLanguageList;
+        if (resultBean != null){
+            submissionLanguageList = new ArrayList<>(resultBean.getLanguage());
+        }else
+        {
+            submissionLanguageList = new ArrayList<>();
+        }
         for (Map.Entry<String, String> entry : submissionMap.entrySet()) {
             writeSubmission2Disk(problemTitle, problemDirectory, entry.getKey(), entry.getValue());
             submissionLanguageList.add(entry.getKey());
@@ -105,5 +149,9 @@ public class Storage {
 
     public void writeMarkdown2Disk(String markdownString) throws IOException {
         writeUtil(outputDir + "/README.md", markdownString);
+    }
+
+    public void writeResult2Disk(String savedResultListString) throws IOException {
+        writeUtil("./result.json", savedResultListString);
     }
 }

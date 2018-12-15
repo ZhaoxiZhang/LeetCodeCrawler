@@ -1,5 +1,6 @@
 import bean.ProblemBean;
 import bean.ProblemContentBean;
+import bean.ResultBean;
 import bean.SubmissionBean;
 import okhttp3.Headers;
 import okhttp3.MediaType;
@@ -34,7 +35,7 @@ public class Problem {
         okHttpHelper = OkHttpHelper.getSingleton();
     }
 
-    public static Problem getInstance() {
+    public static Problem getSingleton() {
         Problem result = problem;
         if (result == null) {
             synchronized (Problem.class) {
@@ -185,22 +186,35 @@ public class Problem {
      * @return 某个题目对于 config 文件指定的语言提交的代码
      * @throws IOException
      */
-    public Map<String, String> getSubmissions(String problemTitle) throws IOException {
+    public synchronized Map<String, String> getSubmissions(String problemTitle, ResultBean resultBean) throws IOException {
         out.println("pre problemTitle = " + problemTitle);
         //保存语言对应的提交代码
-        Map<String, String> submissionMap = new HashMap<>(12);
+        Map<String, String> submissionMap = new HashMap<>();
         int offset = 0;
         int limit = 10;
         boolean hasNext = true;
         String lastKey = "";
 
         List<String> languageList = Config.getSingleton().getLanguageList();
+        //已经在本地存有对应语言的代码
+        List<String> savedLanguageList = resultBean != null ? resultBean.getLanguage() : new ArrayList<>(0);
 
         //保存某个语言的代码是否已经抓取
-        Map<String, Boolean>languageMap = new HashMap<>(12);
+        Map<String, Boolean>languageMap = new HashMap<>();
         for (int i = 0; i < languageList.size(); i++){
-            languageMap.put(languageList.get(i), false);
+            boolean hasExist = false;
+            //数据量较小，暴力搜索
+            for (int j = 0; j < savedLanguageList.size(); j++){
+                if (languageList.get(i).equals(savedLanguageList.get(j))){
+                    hasExist = true;
+                    break;
+                }
+            }
+            if (!hasExist)  languageMap.put(languageList.get(i), false);
         }
+
+        //想要爬取的题目的对应语言提交的代码已经保存在本地了
+        if (languageMap.size() == 0)    return submissionMap;
 
         while(hasNext){
             String submissionsUrl = String.format(URL.SUBMISSIONS_FORMAT, problemTitle, offset, limit, lastKey);
@@ -241,6 +255,7 @@ public class Problem {
                     }
                 }
 
+                //翻页逻辑
                 hasNext = submissionBean.isHas_next();
                 offset = (++offset) * limit;
                 lastKey = submissionBean.getLast_key();

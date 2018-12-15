@@ -1,4 +1,5 @@
 import bean.ProblemBean;
+import bean.ResultBean;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -24,11 +25,12 @@ public class MarkdownGenerator {
 
 
     public String generateMarkdown() throws IOException {
+        Result result = Result.getSingleton();
         StringBuilder markdownString = new StringBuilder();
         int easy = 0;
         int medium = 0;
         int hard = 0;
-        Problem problemInstance = Problem.getInstance();
+        Problem problemInstance = Problem.getSingleton();
         List<ProblemBean.StatStatusPairsBean> acProblems = problemInstance.getAllAcProblems();
         Collections.sort(acProblems, (o1, o2) -> o1.getStat().getQuestion_id() - o2.getStat().getQuestion_id());
         Map<Integer, List<String>> submissionLanguageMap = problemInstance.getSubmissionLanguage();
@@ -82,6 +84,11 @@ public class MarkdownGenerator {
             out.println(row);
 
             markdownString.append(row + "\n");
+
+            ResultBean savedResult = new ResultBean();
+            savedResult.setId(Id);
+            savedResult.setLanguage(languageList);
+            result.addElement2SavedResultList(savedResult);
         }
 
         String shieldString = String.format(SHIELD, easy + medium + hard, totalProblems, easy, medium, hard);

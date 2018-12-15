@@ -8,7 +8,7 @@ public class Main {
         Storage.outputDir = config.getOutputDir();
 
         Login login = new Login(usrname, passwd);
-        Problem problem = Problem.getInstance();
+        Problem problem = Problem.getSingleton();
         Storage storage = new Storage();
 
         if (login.doLogin()){
