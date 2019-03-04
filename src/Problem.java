@@ -30,6 +30,7 @@ public class Problem {
     private List<String> problemFormatNameList;
     private Map<Integer, List<String>> submissionLanguageMap;
     private OkHttpHelper okHttpHelper;
+    private int fakeTotalNumProblem;
 
     private Problem() {
         okHttpHelper = OkHttpHelper.getSingleton();
@@ -107,13 +108,43 @@ public class Problem {
         return problemNameList;
     }
 
+    /**
+     * 由于LeetCode存在题号不连续的情况，例如510直接跳到513，缺少两题
+     * 因此通过JSON获得的数据段"num_total"的值存在小于最新题号值的情况，
+     * 例如："num_total" = 999, 最新题号已经1004
+     * 因此使用num_total作为总值生成的格式化的字符串ID在某一情况下为：
+     * 001  002 ... 1003 1004 长度不都为4，
+     * 为了消除这个问题，取最新题号值为题目数量的最大值
+     * @return
+     * @throws IOException
+     */
+    public int getFakeTotalNumProblem() throws IOException {
+        if (fakeTotalNumProblem == 0){
+            List<ProblemBean.StatStatusPairsBean> problems = getAllProblems();
+            ProblemBean.StatStatusPairsBean problem;
+            for (int i = 0; i < problems.size(); i++) {
+                problem = problems.get(i);
+                fakeTotalNumProblem = Math.max(problem.getStat().getFrontend_question_id(), fakeTotalNumProblem);
+            }
+        }
+        return fakeTotalNumProblem;
+    }
+
+    /**
+     * 生成格式化的字符串ID
+     * 例如total = 100， id = 1， 则result = 001
+     *    total = 1000， id = 1，则 result = 0001
+     * @param total
+     * @param id
+     * @return 格式化的字符串ID
+     */
     public String formId(int total, int id) {
         int digitCntTotal = (int) Math.log10(total);
         int digitCntId = (int) Math.log10(id);
         int needDigitCnt = digitCntTotal - digitCntId;
 
         StringBuilder res = new StringBuilder(digitCntTotal);
-        while (needDigitCnt-- != 0) {
+        while (needDigitCnt-- > 0) {
             res.append(0);
         }
         res.append(id);
@@ -134,7 +165,8 @@ public class Problem {
         Response graphqlResponse = okHttpHelper.post(URL.GRAPHQL, requestBody, headers);
 
         if (graphqlResponse != null) {
-            ProblemContentBean problemContentBean = okHttpHelper.fromJson(graphqlResponse.body().string(), ProblemContentBean.class);
+            String graphqlResponseBodyString = graphqlResponse.body().string();
+            ProblemContentBean problemContentBean = okHttpHelper.fromJson(graphqlResponseBodyString, ProblemContentBean.class);
             problemDescriptionString = problemContentBean.getData().getQuestion().getContent();
 
             graphqlResponse.close();

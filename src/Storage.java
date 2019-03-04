@@ -24,7 +24,7 @@ public class Storage {
         //按题目 Id 从小到大排序
         Collections.sort(restoredResultList, (Comparator.comparingInt(ResultBean::getId)));
 
-        int totalProblems = problem.getAllProblems().size();
+        int totalProblems = problem.getFakeTotalNumProblem();
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         ExecutorService fixedThreadPool = Executors.newFixedThreadPool(2 * availableProcessors);
 
@@ -50,7 +50,7 @@ public class Storage {
             ResultBean finalResultBean = resultBean;
             fixedThreadPool.execute(() -> {
                 ProblemBean.StatStatusPairsBean problemStatStatus = acProblemList.get(finalI);
-                int problemId = problemStatStatus.getStat().getQuestion_id();
+                int problemId = problemStatStatus.getStat().getFrontend_question_id();
                 String problemTitle = problemStatStatus.getStat().getQuestion__title_slug();
                 String formId = problem.formId(totalProblems, problemId);
                 String problemDirectory = outputDir + "/" + formId + "." + problemTitle;

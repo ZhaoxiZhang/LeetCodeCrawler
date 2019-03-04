@@ -35,12 +35,12 @@ public class MarkdownGenerator {
         List<ProblemBean.StatStatusPairsBean> acProblems = problemInstance.getAllAcProblems();
         Collections.sort(acProblems, Comparator.comparingInt(o -> o.getStat().getQuestion_id()));
         Map<Integer, List<String>> submissionLanguageMap = problemInstance.getSubmissionLanguage();
-        int totalProblems = problemInstance.getAllProblems().size();
+        int totalProblems = problemInstance.getFakeTotalNumProblem();
 
         markdownString.append(MARKDOWNTITLE + "\n");
         for (int i = 0; i < acProblems.size(); i++) {
             ProblemBean.StatStatusPairsBean problem = acProblems.get(i);
-            int Id = problem.getStat().getQuestion_id();
+            int Id = problem.getStat().getFrontend_question_id();
             String Number = problemInstance.formId(totalProblems, Id);
             String problemTitle = problem.getStat().getQuestion__title();
             String problemSlug = problem.getStat().getQuestion__title_slug();
