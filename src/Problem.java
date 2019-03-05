@@ -231,7 +231,7 @@ public class Problem {
         //已经在本地存有对应语言的代码
         List<String> savedLanguageList = resultBean != null ? resultBean.getLanguage() : new ArrayList<>(0);
 
-        //保存某个语言的代码是否已经抓取
+        //判断某个语言的代码是否已经抓取
         Map<String, Boolean>languageMap = new HashMap<>();
         for (int i = 0; i < languageList.size(); i++){
             boolean hasExist = false;

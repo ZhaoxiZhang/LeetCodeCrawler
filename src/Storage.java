@@ -13,14 +13,13 @@ import static java.lang.System.out;
 public class Storage {
     public static String outputDir = ".";
 
-
     public void write2Disk(List<ProblemBean.StatStatusPairsBean> acProblemList) throws IOException, InterruptedException {
         Problem problem = Problem.getSingleton();
         Result result = Result.getSingleton();
         List<ResultBean>restoredResultList = result.getRestoredResultList();
 
         //按题目 Id 从小到大排序
-        Collections.sort(acProblemList, Comparator.comparingInt(o -> o.getStat().getQuestion_id()));
+        Collections.sort(acProblemList, Comparator.comparingInt(o -> o.getStat().getFrontend_question_id()));
         //按题目 Id 从小到大排序
         Collections.sort(restoredResultList, (Comparator.comparingInt(ResultBean::getId)));
 
@@ -35,7 +34,7 @@ public class Storage {
             ResultBean resultBean = null;
             if (restoredResultIndex < restoredResultList.size()){
                 int restoredResultIndexId = restoredResultList.get(restoredResultIndex).getId();
-                int acProblemListIndexId = acProblemList.get(i).getStat().getQuestion_id();
+                int acProblemListIndexId = acProblemList.get(i).getStat().getFrontend_question_id();
 
                 if (restoredResultIndexId == acProblemListIndexId){
                     hasExist = true;
@@ -125,7 +124,7 @@ public class Storage {
     }
 
     private void writeSubmission2Disk(String problemTitle, String problemDirectory, String type, String code) throws IOException {
-        writeUtil(problemDirectory + "/" + problemTitle + "." + type, code);
+        writeUtil(problemDirectory + "/" + problemTitle + "." + Util.languageName2FileTypeName(type), code);
     }
 
     public void writeProblem2Disk(Problem problem, String problemTitle, String problemDirectory) throws IOException {
@@ -154,6 +153,6 @@ public class Storage {
     }
 
     public void writeResult2Disk(String savedResultListString) throws IOException {
-        writeUtil("./result.json", savedResultListString);
+        writeUtil(outputDir + "/result.json", savedResultListString);
     }
 }

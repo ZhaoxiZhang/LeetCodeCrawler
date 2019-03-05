@@ -33,7 +33,7 @@ public class MarkdownGenerator {
         int hard = 0;
         Problem problemInstance = Problem.getSingleton();
         List<ProblemBean.StatStatusPairsBean> acProblems = problemInstance.getAllAcProblems();
-        Collections.sort(acProblems, Comparator.comparingInt(o -> o.getStat().getQuestion_id()));
+        Collections.sort(acProblems, Comparator.comparingInt(o -> o.getStat().getFrontend_question_id()));
         Map<Integer, List<String>> submissionLanguageMap = problemInstance.getSubmissionLanguage();
         int totalProblems = problemInstance.getFakeTotalNumProblem();
 
@@ -56,7 +56,7 @@ public class MarkdownGenerator {
 
             for (int j = 0; j < languageList.size(); j++) {
                 String language = languageList.get(j);
-                String languageSolution = String.format(MarkdownGenerator.LANGUAG_FORM, leetCodeName2LanguageName(language), Storage.outputDir + "/" + Number + "." + problemSlug + "/" + problemSlug + "." + language);
+                String languageSolution = String.format(MarkdownGenerator.LANGUAG_FORM, leetCodeName2LanguageName(language), Storage.outputDir + "/" + Number + "." + problemSlug + "/" + problemSlug + "." + Util.languageName2FileTypeName(language));
                 SolutionTmp.append(languageSolution);
             }
             String Solution = SolutionTmp.toString();
