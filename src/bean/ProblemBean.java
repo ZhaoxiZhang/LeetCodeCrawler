@@ -22,8 +22,8 @@ public class ProblemBean {
     private int ac_easy;
     private int ac_medium;
     private int ac_hard;
-    private int frequency_high;
-    private int frequency_mid;
+    private double frequency_high;
+    private double frequency_mid;
     private String category_slug;
     private List<StatStatusPairsBean> stat_status_pairs;
 
@@ -75,19 +75,19 @@ public class ProblemBean {
         this.ac_hard = ac_hard;
     }
 
-    public int getFrequency_high() {
+    public double getFrequency_high() {
         return frequency_high;
     }
 
-    public void setFrequency_high(int frequency_high) {
+    public void setFrequency_high(double frequency_high) {
         this.frequency_high = frequency_high;
     }
 
-    public int getFrequency_mid() {
+    public double getFrequency_mid() {
         return frequency_mid;
     }
 
-    public void setFrequency_mid(int frequency_mid) {
+    public void setFrequency_mid(double frequency_mid) {
         this.frequency_mid = frequency_mid;
     }
 
@@ -123,8 +123,8 @@ public class ProblemBean {
         private DifficultyBean difficulty;
         private boolean paid_only;
         private boolean is_favor;
-        private int frequency;
-        private int progress;
+        private double frequency;
+        private double progress;
 
         public StatBean getStat() {
             return stat;
@@ -166,19 +166,19 @@ public class ProblemBean {
             this.is_favor = is_favor;
         }
 
-        public int getFrequency() {
+        public double getFrequency() {
             return frequency;
         }
 
-        public void setFrequency(int frequency) {
+        public void setFrequency(double frequency) {
             this.frequency = frequency;
         }
 
-        public int getProgress() {
+        public double getProgress() {
             return progress;
         }
 
-        public void setProgress(int progress) {
+        public void setProgress(double progress) {
             this.progress = progress;
         }
 
