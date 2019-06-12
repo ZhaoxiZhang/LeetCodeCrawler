@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="LeetCodeCrawler">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/out/artifacts/LeetCodeCrawler_jar/LeetCodeCrawler.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

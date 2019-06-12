@@ -1,0 +1,250 @@
+import bean.ProblemBean;
+import bean.ProblemContentBean;
+import bean.ResultBean;
+import bean.SubmissionBean;
+import okhttp3.*;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.lang.System.out;
+
+public class Problem {
+    private static volatile Problem problem;
+    private ProblemBean problems;
+    private List<ProblemBean.StatStatusPairsBean> acProblems;
+    private List<String> problemNameList;
+    private List<String> problemFormatNameList;
+    private Map<Integer, List<String>> submissionLanguageMap;
+    private OkHttpHelper okHttpHelper;
+    private int fakeTotalNumProblem;
+
+    private Problem() {
+        okHttpHelper = OkHttpHelper.getSingleton();
+    }
+
+    public static Problem getSingleton() {
+        Problem result = problem;
+        if (result == null) {
+            synchronized (Problem.class) {
+                result = problem;
+                if (result == null) {
+                    result = problem = new Problem();
+                }
+            }
+        }
+        return result;
+    }
+
+    public List<ProblemBean.StatStatusPairsBean> getAllProblems() throws IOException {
+        ProblemBean instance = problems;
+        //一直尝试，直到获取到数据
+        while (instance == null) {
+
+            Headers headers = new Headers.Builder()
+                    .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
+                    .build();
+            Response response = okHttpHelper.get(URL.PROBLEMS, headers);
+
+            if (response.body() != null) {
+                String responseData = response.body().string();
+
+                instance = problems = okHttpHelper.fromJson(responseData, ProblemBean.class);
+
+                response.close();
+
+            }
+        }
+        return instance.getStat_status_pairs();
+    }
+
+    public List<ProblemBean.StatStatusPairsBean> getAllAcProblems() throws IOException {
+        List<ProblemBean.StatStatusPairsBean> instance = acProblems;
+        if (instance == null) {
+            List<ProblemBean.StatStatusPairsBean> problems = getAllProblems();
+            instance = acProblems = new ArrayList<>();
+            ProblemBean.StatStatusPairsBean problem;
+            for (int i = 0; i < problems.size(); i++) {
+                problem = problems.get(i);
+                if (problem.getStatus() != null && problem.getStatus().equals("ac")) {
+                    instance.add(problem);
+                }
+            }
+        }
+
+        return instance;
+    }
+
+    //得到的题目名称格式类似于 001.two-sum
+    public List<String> getAllAcProblemsName() throws IOException {
+        List<String> instance = problemNameList;
+        if (instance == null) {
+            int total = getAllProblems().size();
+            List<ProblemBean.StatStatusPairsBean> acProblems = getAllAcProblems();
+
+            problemNameList = new ArrayList<>(acProblems.size());
+            for (int i = 0; i < acProblems.size(); i++) {
+                int id = acProblems.get(i).getStat().getQuestion_id();
+                String problemTitle = acProblems.get(i).getStat().getQuestion__title_slug();
+                problemNameList.add(formId(total, id) + "." + problemTitle);
+            }
+        }
+        return problemNameList;
+    }
+
+    /**
+     * 由于LeetCode存在题号不连续的情况，例如510直接跳到513，缺少两题
+     * 因此通过JSON获得的数据段"num_total"的值存在小于最新题号值的情况，
+     * 例如："num_total" = 999, 最新题号已经1004
+     * 因此使用num_total作为总值生成的格式化的字符串ID在某一情况下为：
+     * 001  002 ... 1003 1004 长度不都为4，
+     * 为了消除这个问题，取最新题号值为题目数量的最大值
+     * @return
+     * @throws IOException
+     */
+    public int getFakeTotalNumProblem() throws IOException {
+        if (fakeTotalNumProblem == 0){
+            List<ProblemBean.StatStatusPairsBean> problems = getAllProblems();
+            ProblemBean.StatStatusPairsBean problem;
+            for (int i = 0; i < problems.size(); i++) {
+                problem = problems.get(i);
+                fakeTotalNumProblem = Math.max(problem.getStat().getFrontend_question_id(), fakeTotalNumProblem);
+            }
+        }
+        return fakeTotalNumProblem;
+    }
+
+    /**
+     * 生成格式化的字符串ID
+     * 例如total = 100， id = 1， 则result = 001
+     *    total = 1000， id = 1，则 result = 0001
+     * @param total
+     * @param id
+     * @return 格式化的字符串ID
+     */
+    public String formId(int total, int id) {
+        int digitCntTotal = (int) Math.log10(total);
+        int digitCntId = (int) Math.log10(id);
+        int needDigitCnt = digitCntTotal - digitCntId;
+
+        StringBuilder res = new StringBuilder(digitCntTotal);
+        while (needDigitCnt-- > 0) {
+            res.append(0);
+        }
+        res.append(id);
+        return res.toString();
+    }
+
+    /**
+     * 在获取提交的代码的时候服务器可能返回403，一直重试可成功，原因进一步查找中
+     * @param problemTitle
+     * @return 某个题目对于 config 文件指定的语言提交的代码
+     * @throws IOException
+     */
+    public synchronized Map<String, String> getSubmissions(String problemTitle, ResultBean resultBean) throws IOException {
+        if (Main.isDebug)   out.println("pre problemTitle = " + problemTitle);
+        //保存语言对应的提交代码
+        Map<String, String> submissionMap = new HashMap<>();
+        int offset = 0;
+        int limit = 10;
+        boolean hasNext = true;
+        String lastKey = "";
+
+        List<String> languageList = Config.getSingleton().getLanguageList();
+        //已经在本地存有对应语言的代码
+        List<String> savedLanguageList = resultBean != null ? resultBean.getLanguage() : new ArrayList<>(0);
+
+        //判断某个语言的代码是否已经抓取
+        Map<String, Boolean>languageMap = new HashMap<>();
+        for (int i = 0; i < languageList.size(); i++){
+            boolean hasExist = false;
+            //数据量较小，暴力搜索
+            for (int j = 0; j < savedLanguageList.size(); j++){
+                if (languageList.get(i).equals(savedLanguageList.get(j))){
+                    hasExist = true;
+                    break;
+                }
+            }
+            if (!hasExist)  languageMap.put(languageList.get(i), false);
+        }
+
+        //想要爬取的题目的对应语言提交的代码已经保存在本地了
+        if (languageMap.size() == 0)    return submissionMap;
+
+        while(hasNext){
+            String submissionsUrl = String.format(URL.SUBMISSIONS_FORMAT, problemTitle, offset, limit, lastKey);
+
+            Headers headers = new Headers.Builder()
+                    .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
+                    .build();
+
+            Response response = okHttpHelper.get(submissionsUrl, headers);
+
+            if (response != null){
+                String responseData = response.body().string();
+
+                SubmissionBean submissionBean = okHttpHelper.fromJson(responseData, SubmissionBean.class);
+                List<SubmissionBean.SubmissionsDumpBean> submissionsDumpList = submissionBean.getSubmissions_dump();
+
+                if (submissionsDumpList == null){
+                    if (Main.isDebug){
+                        out.println("submissionsUrl = " + submissionsUrl);
+                        out.println("problemTitle = " + problemTitle);
+                        out.println("responseData = " + responseData);
+                        out.println("status message = " + response.message());
+                        out.println("message code = " + response.code());
+                    }
+                    /*
+                     * 当获取不到提交记录时休眠一小段时间后进行重复尝试,服务器返回如下信息
+                     * responseData = {"detail":"You do not have permission to perform this action."}
+                     * status message = Forbidden
+                     * message code = 403
+                     */
+                    continue;
+                }
+
+                for (int i = 0; i < submissionsDumpList.size(); i++){
+                    SubmissionBean.SubmissionsDumpBean submission = submissionsDumpList.get(i);
+                    String language = submission.getLang();
+                    if (languageMap.containsKey(language) && languageMap.get(language) == false && submission.getStatus_display().equals("Accepted")){
+                        submissionMap.put(language, submission.getCode());
+                        languageMap.put(language, true);
+                    }
+                }
+
+                //翻页逻辑
+                hasNext = submissionBean.isHas_next();
+                offset = (offset / 10 + 1) * limit;
+                lastKey = submissionBean.getLast_key();
+
+                response.close();
+            }else{
+                //TODO
+            }
+        }
+
+        return submissionMap;
+    }
+
+    /**
+     * 在 Storage 类中的 writeSubmissions2Disk 方法会对 submissionLanguageMap 填充数据
+     * 因此需要在 writeSubmissions2Disk 方法执行后调用方有效
+     * @return submissionLanguageMap 某道题对于 config 文件中指定的语言中真实提交的语言
+     */
+    public Map<Integer, List<String>>getSubmissionLanguage(){
+        if (submissionLanguageMap == null){
+            submissionLanguageMap = new ConcurrentHashMap<>();
+        }
+        return submissionLanguageMap;
+    }
+}
