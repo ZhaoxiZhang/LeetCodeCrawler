@@ -3,7 +3,15 @@
   <component name="ChangeListManager">
     <list default="true" id="5e59768c-6ba2-4fe2-aa7a-d52a45fc1cd5" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/config.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/GraphQL.java" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/GraphQL.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/MarkdownGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/MarkdownGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/Problem.java" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/Problem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/Storage.java" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/Storage.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/URL.java" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/URL.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/bean/ProblemDataBean.java" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/bean/ProblemDataBean.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/bean/SubmissionBean.java" beforeDir="false" afterPath="$PROJECT_DIR$/../Cn-LeetCodeCrawler/src/bean/SubmissionBean.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -257,7 +265,7 @@
     <option name="totallyTimeSpent" value="31712000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
+    <frame x="-8" y="-8" width="1382" height="744" extended-state="7" />
     <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.19818456" />

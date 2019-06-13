@@ -2,8 +2,14 @@ import bean.ProblemBean;
 import bean.ResultBean;
 import com.google.gson.Gson;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -51,13 +57,12 @@ public class Storage {
         ExecutorService fixedThreadPool = Executors.newFixedThreadPool(2 * availableProcessors);
 
         int restoredProblemIndex = 0;
-        for (int i = 0; i < acProblemList.size(); i++) {
-            if (Main.isDebug) out.println("write2Disk " + i);
+        for (ProblemBean.StatStatusPairsBean statStatusPairsBean : acProblemList) {
             boolean hasExisted = false;
             ResultBean resultBean = null;
             if (restoredProblemIndex < restoredProblemList.size()) {
                 int restoredProblemFrontedId = restoredProblemList.get(restoredProblemIndex).getFrontend_id();
-                int acProblemFrontedId = acProblemList.get(i).getStat().getFrontend_question_id();
+                int acProblemFrontedId = statStatusPairsBean.getStat().getFrontend_question_id();
 
                 if (restoredProblemFrontedId == acProblemFrontedId) {
                     hasExisted = true;
@@ -67,15 +72,15 @@ public class Storage {
                 resultBean = hasExisted ? restoredProblemList.get(restoredProblemIndex - 1) : null;
             }
 
+            ProblemBean.StatStatusPairsBean.StatBean statBean = statStatusPairsBean.getStat();
+            int problemFrontedId = statBean.getFrontend_question_id();
+            String problemTitleSlug = statBean.getQuestion__title_slug();
+            String formFrontedId = Util.formId(fakeTotalNumProblem, problemFrontedId);
+            String problemDirectory = outputDir + "/" + formFrontedId + "." + problemTitleSlug;
+
             boolean finalHasExisted = hasExisted;
-            int finalI = i;
             ResultBean finalResultBean = resultBean;
             fixedThreadPool.execute(() -> {
-                ProblemBean.StatStatusPairsBean.StatBean statBean = acProblemList.get(finalI).getStat();
-                int problemFrontedId = statBean.getFrontend_question_id();
-                String problemTitleSlug = statBean.getQuestion__title_slug();
-                String formFrontedId = Util.formId(fakeTotalNumProblem, problemFrontedId);
-                String problemDirectory = outputDir + "/" + formFrontedId + "." + problemTitleSlug;
 
                 if (!finalHasExisted) {
                     createDirectory(problemDirectory);
@@ -88,13 +93,12 @@ public class Storage {
                 } else {
                     statBean.setQuestion__translated_title(finalResultBean.getTranslatedTitle());
                     statBean.setQuestion__topics_tags(finalResultBean.getTopicTags());
+                    problemInstance.putData2TopicsMap(finalResultBean.getTopicTags(), statBean);
                 }
 
                 try {
                     writeSubmissions2Disk(problemDirectory, problemFrontedId, problemTitleSlug, finalResultBean);
                 } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
@@ -106,7 +110,8 @@ public class Storage {
         // 等待线程池中的所有任务执行结束
         fixedThreadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
-        writeMarkdown2Disk(markdownGeneratorInstance.generateMarkdown());
+        writeMarkdown2Disk("Topics", markdownGeneratorInstance.generateTopics());
+        writeMarkdown2Disk("README", markdownGeneratorInstance.generateREADME());
 
         Gson gson = new Gson();
         List<ResultBean> savedResultList = resultInstance.getSavedResultList();
@@ -147,7 +152,7 @@ public class Storage {
         writeUtil(problemDirectory + "/" + problemTitleSlug + "." + Util.languageName2FileTypeName(type), code);
     }
 
-    public void writeSubmissions2Disk(String problemDirectory, int problemFrontedId, String problemTitleSlug, ResultBean resultBean) throws IOException, InterruptedException {
+    public void writeSubmissions2Disk(String problemDirectory, int problemFrontedId, String problemTitleSlug, ResultBean resultBean) throws IOException {
         List<String> submissionLanguageList;
         if (resultBean != null) {
             submissionLanguageList = new ArrayList<>(resultBean.getLanguage());
@@ -164,8 +169,8 @@ public class Storage {
         problemInstance.putData2SubmissionLanguageMap(problemFrontedId, submissionLanguageList);
     }
 
-    public void writeMarkdown2Disk(String markdownContent) throws IOException {
-        writeUtil(outputDir + "/README.md", markdownContent);
+    public void writeMarkdown2Disk(String fileName, String markdownContent) throws IOException {
+        writeUtil(outputDir + "/" + fileName + ".md", markdownContent);
     }
 
     public void writeResult2Disk(String savedResultListString) throws IOException {

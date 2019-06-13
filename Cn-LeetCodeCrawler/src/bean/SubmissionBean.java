@@ -5,154 +5,178 @@ import java.util.List;
 public class SubmissionBean {
 
     /**
-     * data : {"submissionList":{"lastKey":"x1dqqdxx","hasNext":false,"submissions":[{"id":"33896xx","statusDisplay":"Accepted","lang":"cpp","runtime":"12 ms","timestamp":"15939994xx","url":"/submissions/detail/33896xx/","isPending":"Not Pending","memory":"N/A"}]}}
+     * submissions_dump : [{"id":83896xx,"lang":"cpp","time":"1 年，10 月","status_display":"Accepted","runtime":"12 ms","url":"/submissions/detail/83896xx/","is_pending":"Not Pending","title":"两数之和","timestamp":01939994xx,"memory":"N/A","code":"class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        vector<int>res;\n        map<int,int>mp;\n        for (unsigned int i = 0;i < nums.size();i++){\n            mp[nums[i]] = i;\n        }\n        for (unsigned int i = 0;i < nums.size();i++){\n            if (mp.find(target - nums[i]) != mp.end() && i != mp[target - nums[i]]){\n                res.push_back(i);\n                res.push_back(mp[target-nums[i]]);\n                return res;\n            }\n        }\n    }\n};","compare_result":"1111111111111111111"}]
+     * has_next : false
+     * last_key : x1dqoqxx
      */
 
-    private DataBean data;
+    private boolean has_next;
+    private String last_key;
+    private List<SubmissionsDumpBean> submissions_dump;
 
-    public DataBean getData() {
-        return data;
+    public boolean isHas_next() {
+        return has_next;
     }
 
-    public void setData(DataBean data) {
-        this.data = data;
+    public void setHas_next(boolean has_next) {
+        this.has_next = has_next;
     }
 
-    public static class DataBean {
+    public String getLast_key() {
+        return last_key;
+    }
+
+    public void setLast_key(String last_key) {
+        this.last_key = last_key;
+    }
+
+    public List<SubmissionsDumpBean> getSubmissions_dump() {
+        return submissions_dump;
+    }
+
+    public void setSubmissions_dump(List<SubmissionsDumpBean> submissions_dump) {
+        this.submissions_dump = submissions_dump;
+    }
+
+    public static class SubmissionsDumpBean {
         /**
-         * submissionList : {"lastKey":"x1dqqdxx","hasNext":false,"submissions":[{"id":"33896xx","statusDisplay":"Accepted","lang":"cpp","runtime":"12 ms","timestamp":"15939994xx","url":"/submissions/detail/33896xx/","isPending":"Not Pending","memory":"N/A"}]}
+         * id : 83896xx
+         * lang : cpp
+         * time : 1 年，10 月
+         * status_display : Accepted
+         * runtime : 12 ms
+         * url : /submissions/detail/83896xx/
+         * is_pending : Not Pending
+         * title : 两数之和
+         * timestamp : 01939994xx
+         * memory : N/A
+         * code : class Solution {
+         * public:
+         * vector<int> twoSum(vector<int>& nums, int target) {
+         * vector<int>res;
+         * map<int,int>mp;
+         * for (unsigned int i = 0;i < nums.size();i++){
+         * mp[nums[i]] = i;
+         * }
+         * for (unsigned int i = 0;i < nums.size();i++){
+         * if (mp.find(target - nums[i]) != mp.end() && i != mp[target - nums[i]]){
+         * res.push_back(i);
+         * res.push_back(mp[target-nums[i]]);
+         * return res;
+         * }
+         * }
+         * }
+         * };
+         * compare_result : 1111111111111111111
          */
 
-        private SubmissionListBean submissionList;
+        private int id;
+        private String lang;
+        private String time;
+        private String status_display;
+        private String runtime;
+        private String url;
+        private String is_pending;
+        private String title;
+        private int timestamp;
+        private String memory;
+        private String code;
+        private String compare_result;
 
-        public SubmissionListBean getSubmissionList() {
-            return submissionList;
+        public int getId() {
+            return id;
         }
 
-        public void setSubmissionList(SubmissionListBean submissionList) {
-            this.submissionList = submissionList;
+        public void setId(int id) {
+            this.id = id;
         }
 
-        public static class SubmissionListBean {
-            /**
-             * lastKey : x1dqqdxx
-             * hasNext : false
-             * submissions : [{"id":"33896xx","statusDisplay":"Accepted","lang":"cpp","runtime":"12 ms","timestamp":"15939994xx","url":"/submissions/detail/33896xx/","isPending":"Not Pending","memory":"N/A"}]
-             */
+        public String getLang() {
+            return lang;
+        }
 
-            private String lastKey;
-            private boolean hasNext;
-            private List<SubmissionsBean> submissions;
+        public void setLang(String lang) {
+            this.lang = lang;
+        }
 
-            public String getLastKey() {
-                return lastKey;
-            }
+        public String getTime() {
+            return time;
+        }
 
-            public void setLastKey(String lastKey) {
-                this.lastKey = lastKey;
-            }
+        public void setTime(String time) {
+            this.time = time;
+        }
 
-            public boolean isHasNext() {
-                return hasNext;
-            }
+        public String getStatus_display() {
+            return status_display;
+        }
 
-            public void setHasNext(boolean hasNext) {
-                this.hasNext = hasNext;
-            }
+        public void setStatus_display(String status_display) {
+            this.status_display = status_display;
+        }
 
-            public List<SubmissionsBean> getSubmissions() {
-                return submissions;
-            }
+        public String getRuntime() {
+            return runtime;
+        }
 
-            public void setSubmissions(List<SubmissionsBean> submissions) {
-                this.submissions = submissions;
-            }
+        public void setRuntime(String runtime) {
+            this.runtime = runtime;
+        }
 
-            public static class SubmissionsBean {
-                /**
-                 * id : 33896xx
-                 * statusDisplay : Accepted
-                 * lang : cpp
-                 * runtime : 12 ms
-                 * timestamp : 15939994xx
-                 * url : /submissions/detail/33896xx/
-                 * isPending : Not Pending
-                 * memory : N/A
-                 */
+        public String getUrl() {
+            return url;
+        }
 
-                private String id;
-                private String statusDisplay;
-                private String lang;
-                private String runtime;
-                private String timestamp;
-                private String url;
-                private String isPending;
-                private String memory;
+        public void setUrl(String url) {
+            this.url = url;
+        }
 
-                public String getId() {
-                    return id;
-                }
+        public String getIs_pending() {
+            return is_pending;
+        }
 
-                public void setId(String id) {
-                    this.id = id;
-                }
+        public void setIs_pending(String is_pending) {
+            this.is_pending = is_pending;
+        }
 
-                public String getStatusDisplay() {
-                    return statusDisplay;
-                }
+        public String getTitle() {
+            return title;
+        }
 
-                public void setStatusDisplay(String statusDisplay) {
-                    this.statusDisplay = statusDisplay;
-                }
+        public void setTitle(String title) {
+            this.title = title;
+        }
 
-                public String getLang() {
-                    return lang;
-                }
+        public int getTimestamp() {
+            return timestamp;
+        }
 
-                public void setLang(String lang) {
-                    this.lang = lang;
-                }
+        public void setTimestamp(int timestamp) {
+            this.timestamp = timestamp;
+        }
 
-                public String getRuntime() {
-                    return runtime;
-                }
+        public String getMemory() {
+            return memory;
+        }
 
-                public void setRuntime(String runtime) {
-                    this.runtime = runtime;
-                }
+        public void setMemory(String memory) {
+            this.memory = memory;
+        }
 
-                public String getTimestamp() {
-                    return timestamp;
-                }
+        public String getCode() {
+            return code;
+        }
 
-                public void setTimestamp(String timestamp) {
-                    this.timestamp = timestamp;
-                }
+        public void setCode(String code) {
+            this.code = code;
+        }
 
-                public String getUrl() {
-                    return url;
-                }
+        public String getCompare_result() {
+            return compare_result;
+        }
 
-                public void setUrl(String url) {
-                    this.url = url;
-                }
-
-                public String getIsPending() {
-                    return isPending;
-                }
-
-                public void setIsPending(String isPending) {
-                    this.isPending = isPending;
-                }
-
-                public String getMemory() {
-                    return memory;
-                }
-
-                public void setMemory(String memory) {
-                    this.memory = memory;
-                }
-            }
+        public void setCompare_result(String compare_result) {
+            this.compare_result = compare_result;
         }
     }
 }

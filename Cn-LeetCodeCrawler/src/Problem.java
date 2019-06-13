@@ -24,6 +24,7 @@ public class Problem {
     private ProblemBean problems;
     private List<ProblemBean.StatStatusPairsBean> acProblemList;
     private Map<Integer, List<String>> submissionLanguageMap;
+    private Map<String, List<ProblemBean.StatStatusPairsBean.StatBean>> topicsMap;
     private OkHttpHelper okHttpHelperInstance;
     private Config configInstance;
     private int fakeTotalNumProblem;
@@ -32,6 +33,7 @@ public class Problem {
         okHttpHelperInstance = OkHttpHelper.getSingleton();
         configInstance = Config.getSingleton();
         submissionLanguageMap = new ConcurrentHashMap<>();
+        topicsMap = new ConcurrentHashMap<>();
         fakeTotalNumProblem = -1;
     }
 
@@ -59,9 +61,9 @@ public class Problem {
                 if (Main.isDebug) out.println(responseData);
 
                 instance = problems = okHttpHelperInstance.fromJson(responseData, ProblemBean.class);
-
-                response.close();
             }
+
+            response.close();
         }
 
         return instance;
@@ -122,10 +124,14 @@ public class Problem {
                 String responseData = response.body().string();
                 ProblemDataBean problemDataBean = okHttpHelperInstance.fromJson(responseData, ProblemDataBean.class);
                 problemDescription = problemDataBean.getData().getQuestion().getTranslatedContent();
+
+                List<ProblemDataBean.DataBean.QuestionBean.TopicTagsBean> topicTagsList = problemDataBean.getData().getQuestion().getTopicTags();
                 problem.setQuestion__translated_title(problemDataBean.getData().getQuestion().getTranslatedTitle());
-                problem.setQuestion__topics_tags(problemDataBean.getData().getQuestion().getTopicTags());
-                response.close();
+                problem.setQuestion__topics_tags(topicTagsList);
+
+                putData2TopicsMap(topicTagsList, problem);
             }
+            response.close();
         }
 
         return problemDescription;
@@ -157,14 +163,6 @@ public class Problem {
             if (response.isSuccessful() && response.body() != null) {
                 String htmlContent = response.body().string();
 
-                if (Main.isDebug) {
-                    out.println();
-                    out.println("getSubmissionCode = " + submissionDetailURL);
-                    out.println("message = " + response.message());
-                    out.println("code = " + response.code());
-
-                }
-
                 Document document = Jsoup.parse(htmlContent);
                 Elements elements = document.getElementsByTag("script");
                 for (Element element : elements) {
@@ -176,16 +174,17 @@ public class Problem {
                     }
                 }
 
-                response.close();
             } else {    //too many requests
                 out.println();
                 out.println("code : " + response.code() + " message : " + response.message());
-                if (response.code() == 429){
+                if (response.code() == 429) {
                     out.println("The program will run after 40 seconds later");
                     Thread.sleep(40000);
                 }
                 out.println();
             }
+
+            response.close();
         }
 
         codeContent = encode(codeContent);
@@ -193,11 +192,11 @@ public class Problem {
         return codeContent;
     }
 
-    public Map<String, String> getSubmissions(String problemTitleSlug, ResultBean resultBean) throws IOException, InterruptedException {
+    public Map<String, String> getSubmissions(String problemTitleSlug, ResultBean resultBean) throws IOException {
         Map<String, String> submissionMap = new HashMap<>();
 
         int offset = 0;
-        int limit = 20;
+        int limit = 10;
         boolean hasNext = true;
         String lastKey = "";
         List<String> languageList = new ArrayList<>(configInstance.getLanguageList());
@@ -212,57 +211,59 @@ public class Problem {
             }
         }
 
+        if (languageList.size() == 0) return submissionMap;
+
         while (hasNext) {
-            String postBody = String.format(GraphQL.questionSubmissions, offset, limit, lastKey, problemTitleSlug);
-            RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), postBody);
-            Headers headers = new Headers.Builder()
-                    .add("Content-Type", "application/json")
-                    .add("Referer", String.format(URL.SUBMISSIONS, problemTitleSlug))
-                    .add("origin", URL.HOME)
-                    .build();
+//            String postBody = String.format(GraphQL.questionSubmissions, offset, limit, lastKey, problemTitleSlug);
+//            RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), postBody);
+//            Headers headers = new Headers.Builder()
+//                    .add("Content-Type", "application/json")
+//                    .add("Referer", String.format(URL.SUBMISSIONS, problemTitleSlug))
+//                    .add("origin", URL.HOME)
+//                    .build();
 
             String responseData = "";
             while (responseData.isEmpty()) {
 
-                Response response = okHttpHelperInstance.postSync(URL.GRAPHQL, requestBody, headers);
+                //Response response = okHttpHelperInstance.postSync(URL.GRAPHQL, requestBody, headers);
+
+                String submissionsURL = String.format(URL.SUBMISSIONS, problemTitleSlug, offset, limit, lastKey);
+                Response response = okHttpHelperInstance.getSync(submissionsURL);
 
                 if (response.isSuccessful() && response.body() != null) {
                     responseData = response.body().string();
 
                     SubmissionBean submissionBean = okHttpHelperInstance.fromJson(responseData, SubmissionBean.class);
-                    List<SubmissionBean.DataBean.SubmissionListBean.SubmissionsBean> submissionsBeanList = submissionBean.getData().getSubmissionList().getSubmissions();
-
-                    if (submissionsBeanList == null) {
-                        if (Main.isDebug) {
-                            out.println();
-                            out.println("problemTitleSlug = " + problemTitleSlug);
-                            out.println("response data = " + responseData);
-                            out.println("status message = " + response.message());
-                            out.println("message code = " + response.code());
-                            out.println();
-                        }
-                        continue;
-                    }
+                    List<SubmissionBean.SubmissionsDumpBean> submissionsBeanList = submissionBean.getSubmissions_dump();
 
                     for (int i = 0; i < submissionsBeanList.size() && languageList.size() != 0; i++) {
-                        SubmissionBean.DataBean.SubmissionListBean.SubmissionsBean submission = submissionsBeanList.get(i);
-                        if (submission.getStatusDisplay().equals("Accepted")) {
+                        SubmissionBean.SubmissionsDumpBean submission = submissionsBeanList.get(i);
+                        if (submission.getStatus_display().equals("Accepted")) {
                             String language = submission.getLang();
                             iterator = languageList.iterator();
                             while (iterator.hasNext()) {
                                 if (iterator.next().equals(language)) {
-                                    submissionMap.put(language, getSubmissionCode(submission.getUrl()));
+                                    //submissionMap.put(language, getSubmissionCode(submission.getUrl()));
+                                    submissionMap.put(language, submission.getCode());
                                     iterator.remove();
                                     break;
                                 }
                             }
                         }
                     }
-                    hasNext = submissionBean.getData().getSubmissionList().isHasNext();
+                    hasNext = submissionBean.isHas_next();
                     offset = ((offset / 10) + 1) * limit;
-                    lastKey = submissionBean.getData().getSubmissionList().getLastKey();
+                    lastKey = submissionBean.getLast_key();
+                } else {
+                    if (Main.isDebug) {
+                        out.println();
+                        out.println("problemTitleSlug : " + problemTitleSlug + " code : " + response.code() + "  message : " + response.message());
+                        out.println(response.headers().toString());
+                        out.println();
+                    }
                 }
 
+                response.close();
             }
 
             if (languageList.size() == 0) {
@@ -285,4 +286,20 @@ public class Problem {
         submissionLanguageMap.put(problemFrontedId, languageList);
     }
 
+    public Map<String, List<ProblemBean.StatStatusPairsBean.StatBean>> getTopicsMap() {
+        return topicsMap;
+    }
+
+    public void putData2TopicsMap(List<ProblemDataBean.DataBean.QuestionBean.TopicTagsBean> topicTagsList, ProblemBean.StatStatusPairsBean.StatBean problem) {
+        for (ProblemDataBean.DataBean.QuestionBean.TopicTagsBean topic : topicTagsList) {
+            List<ProblemBean.StatStatusPairsBean.StatBean> statBeanList = topicsMap.get(topic.getName());
+            if (statBeanList != null) {
+                statBeanList.add(problem);
+            } else {
+                statBeanList = new ArrayList<>();
+                statBeanList.add(problem);
+            }
+            topicsMap.put(topic.getName(), statBeanList);
+        }
+    }
 }

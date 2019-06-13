@@ -9,7 +9,7 @@ public class ResultBean {
      * frontend_id : 1
      * language : ["cpp","java"]
      * translatedTitle : 两数之和
-     * topicTags : [{"name":"Array","translatedName":"数组"}]
+     * topicTags : [{"name":"Array","slug":"array","translatedName":"数组"}]
      */
 
     private int frontend_id;
