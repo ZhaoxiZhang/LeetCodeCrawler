@@ -1,21 +1,15 @@
 import bean.ProblemBean;
-import bean.ProblemContentBean;
+import bean.ProblemDataBean;
 import bean.ResultBean;
 import bean.SubmissionBean;
-import okhttp3.*;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.lang.System.out;
 
@@ -26,11 +20,17 @@ public class Problem {
     private List<String> problemNameList;
     private List<String> problemFormatNameList;
     private Map<Integer, List<String>> submissionLanguageMap;
-    private OkHttpHelper okHttpHelper;
+    private Map<String, List<ProblemBean.StatStatusPairsBean.StatBean>> topicsMap;
+    private OkHttpHelper okHttpHelperInstance;
+    private Config configInstance;
     private int fakeTotalNumProblem;
 
     private Problem() {
-        okHttpHelper = OkHttpHelper.getSingleton();
+        okHttpHelperInstance = OkHttpHelper.getSingleton();
+        configInstance = Config.getSingleton();
+        submissionLanguageMap = new ConcurrentHashMap<>();
+        topicsMap = new ConcurrentHashMap<>();
+        fakeTotalNumProblem = -1;
     }
 
     public static Problem getSingleton() {
@@ -46,26 +46,32 @@ public class Problem {
         return result;
     }
 
-    public List<ProblemBean.StatStatusPairsBean> getAllProblems() throws IOException {
+    public ProblemBean getAllProblemsInformation() throws IOException {
         ProblemBean instance = problems;
-        //一直尝试，直到获取到数据
+
         while (instance == null) {
+            Response response = okHttpHelperInstance.getSync(URL.PROBLEMS);
 
-            Headers headers = new Headers.Builder()
-                    .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
-                    .build();
-            Response response = okHttpHelper.get(URL.PROBLEMS, headers);
-
-            if (response.body() != null) {
+            if (response.isSuccessful() && response.body() != null) {
                 String responseData = response.body().string();
+                if (Main.isDebug) out.println(responseData);
 
-                instance = problems = okHttpHelper.fromJson(responseData, ProblemBean.class);
-
-                response.close();
-
+                instance = problems = okHttpHelperInstance.fromJson(responseData, ProblemBean.class);
+            } else {
+                if (Main.isDebug) {
+                    out.println();
+                    out.println("code : " + response.code() + " message : " + response.message());
+                }
             }
+
+            response.close();
         }
-        return instance.getStat_status_pairs();
+
+        return instance;
+    }
+
+    public List<ProblemBean.StatStatusPairsBean> getAllProblems() throws IOException {
+        return getAllProblemsInformation().getStat_status_pairs();
     }
 
     public List<ProblemBean.StatStatusPairsBean> getAllAcProblems() throws IOException {
@@ -73,11 +79,9 @@ public class Problem {
         if (instance == null) {
             List<ProblemBean.StatStatusPairsBean> problems = getAllProblems();
             instance = acProblems = new ArrayList<>();
-            ProblemBean.StatStatusPairsBean problem;
-            for (int i = 0; i < problems.size(); i++) {
-                problem = problems.get(i);
-                if (problem.getStatus() != null && problem.getStatus().equals("ac")) {
-                    instance.add(problem);
+            for (ProblemBean.StatStatusPairsBean statStatusPairsBean : problems) {
+                if (statStatusPairsBean.getStatus() != null && statStatusPairsBean.getStatus().equals("ac")) {
+                    instance.add(statStatusPairsBean);
                 }
             }
         }
@@ -93,10 +97,10 @@ public class Problem {
             List<ProblemBean.StatStatusPairsBean> acProblems = getAllAcProblems();
 
             problemNameList = new ArrayList<>(acProblems.size());
-            for (int i = 0; i < acProblems.size(); i++) {
-                int id = acProblems.get(i).getStat().getQuestion_id();
-                String problemTitle = acProblems.get(i).getStat().getQuestion__title_slug();
-                problemNameList.add(formId(total, id) + "." + problemTitle);
+            for (ProblemBean.StatStatusPairsBean acProblem : acProblems) {
+                int id = acProblem.getStat().getQuestion_id();
+                String problemTitle = acProblem.getStat().getQuestion__title_slug();
+                problemNameList.add(Util.formId(total, id) + "." + problemTitle);
             }
         }
         return problemNameList;
@@ -109,50 +113,50 @@ public class Problem {
      * 因此使用num_total作为总值生成的格式化的字符串ID在某一情况下为：
      * 001  002 ... 1003 1004 长度不都为4，
      * 为了消除这个问题，取最新题号值为题目数量的最大值
-     * @return
-     * @throws IOException
      */
     public int getFakeTotalNumProblem() throws IOException {
-        if (fakeTotalNumProblem == 0){
+        if (fakeTotalNumProblem == -1) {
             List<ProblemBean.StatStatusPairsBean> problems = getAllProblems();
-            ProblemBean.StatStatusPairsBean problem;
-            for (int i = 0; i < problems.size(); i++) {
-                problem = problems.get(i);
-                fakeTotalNumProblem = Math.max(problem.getStat().getFrontend_question_id(), fakeTotalNumProblem);
+            for (ProblemBean.StatStatusPairsBean statStatusPairsBean : problems) {
+                fakeTotalNumProblem = Math.max(statStatusPairsBean.getStat().getFrontend_question_id(), fakeTotalNumProblem);
             }
         }
         return fakeTotalNumProblem;
     }
 
-    /**
-     * 生成格式化的字符串ID
-     * 例如total = 100， id = 1， 则result = 001
-     *    total = 1000， id = 1，则 result = 0001
-     * @param total
-     * @param id
-     * @return 格式化的字符串ID
-     */
-    public String formId(int total, int id) {
-        int digitCntTotal = (int) Math.log10(total);
-        int digitCntId = (int) Math.log10(id);
-        int needDigitCnt = digitCntTotal - digitCntId;
+    public String getProblemDescription(ProblemBean.StatStatusPairsBean.StatBean problem) throws IOException {
+        String problemDescription = null;
 
-        StringBuilder res = new StringBuilder(digitCntTotal);
-        while (needDigitCnt-- > 0) {
-            res.append(0);
+        String postBody = String.format(GraphQL.questionData, problem.getQuestion__title_slug());
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), postBody);
+        Headers headers = new Headers.Builder()
+                .add("Content-Type", "application/json")
+                .add("Referer", String.format(URL.PROBLEM, problem.getQuestion__title_slug()))
+                .add("origin", URL.HOME)
+                .build();
+
+        Response response;
+        while (problemDescription == null) {
+            response = okHttpHelperInstance.postSync(URL.GRAPHQL, requestBody, headers);
+
+            if (response.isSuccessful() && response.body() != null) {
+                String responseData = response.body().string();
+                ProblemDataBean problemDataBean = okHttpHelperInstance.fromJson(responseData, ProblemDataBean.class);
+                problemDescription = problemDataBean.getData().getQuestion().getContent();
+
+                List<ProblemDataBean.DataBean.QuestionBean.TopicTagsBean> topicTagsList = problemDataBean.getData().getQuestion().getTopicTags();
+                problem.setQuestion__translated_title(problemDataBean.getData().getQuestion().getTranslatedTitle());
+                problem.setQuestion__topics_tags(topicTagsList);
+
+                putData2TopicsMap(topicTagsList, problem);
+            }
+            response.close();
         }
-        res.append(id);
-        return res.toString();
+
+        return problemDescription;
     }
 
-    /**
-     * 在获取提交的代码的时候服务器可能返回403，一直重试可成功，原因进一步查找中
-     * @param problemTitle
-     * @return 某个题目对于 config 文件指定的语言提交的代码
-     * @throws IOException
-     */
-    public synchronized Map<String, String> getSubmissions(String problemTitle, ResultBean resultBean) throws IOException {
-        if (Main.isDebug)   out.println("pre problemTitle = " + problemTitle);
+    public Map<String, String> getSubmissions(String problemTitleSlug, ResultBean resultBean) throws IOException {
         //保存语言对应的提交代码
         Map<String, String> submissionMap = new HashMap<>();
         int offset = 0;
@@ -160,91 +164,98 @@ public class Problem {
         boolean hasNext = true;
         String lastKey = "";
 
-        List<String> languageList = Config.getSingleton().getLanguageList();
+        List<String> languageList = new ArrayList<>(configInstance.getLanguageList());
         //已经在本地存有对应语言的代码
         List<String> savedLanguageList = resultBean != null ? resultBean.getLanguage() : new ArrayList<>(0);
-
-        //判断某个语言的代码是否已经抓取
-        Map<String, Boolean>languageMap = new HashMap<>();
-        for (int i = 0; i < languageList.size(); i++){
-            boolean hasExist = false;
-            //数据量较小，暴力搜索
-            for (int j = 0; j < savedLanguageList.size(); j++){
-                if (languageList.get(i).equals(savedLanguageList.get(j))){
-                    hasExist = true;
-                    break;
+        Iterator<String> iterator = languageList.iterator();
+        while (iterator.hasNext()) {
+            String language = iterator.next();
+            for (String savedLanguage : savedLanguageList) {
+                if (savedLanguage.equals(language)) {
+                    iterator.remove();
                 }
             }
-            if (!hasExist)  languageMap.put(languageList.get(i), false);
         }
 
         //想要爬取的题目的对应语言提交的代码已经保存在本地了
-        if (languageMap.size() == 0)    return submissionMap;
+        if (languageList.size() == 0) return submissionMap;
 
-        while(hasNext){
-            String submissionsUrl = String.format(URL.SUBMISSIONS_FORMAT, problemTitle, offset, limit, lastKey);
+        while (hasNext) {
+            String responseData = "";
+            while (responseData.isEmpty()) {
+                String submissionsURL = String.format(URL.SUBMISSIONS_FORMAT, problemTitleSlug, offset, limit, lastKey);
+                Response response = okHttpHelperInstance.getSync(submissionsURL);
 
-            Headers headers = new Headers.Builder()
-                    .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
-                    .build();
+                if (response.isSuccessful() && response.body() != null) {
+                    responseData = response.body().string();
 
-            Response response = okHttpHelper.get(submissionsUrl, headers);
+                    SubmissionBean submissionBean = okHttpHelperInstance.fromJson(responseData, SubmissionBean.class);
+                    List<SubmissionBean.SubmissionsDumpBean> submissionsBeanList = submissionBean.getSubmissions_dump();
 
-            if (response != null){
-                String responseData = response.body().string();
-
-                SubmissionBean submissionBean = okHttpHelper.fromJson(responseData, SubmissionBean.class);
-                List<SubmissionBean.SubmissionsDumpBean> submissionsDumpList = submissionBean.getSubmissions_dump();
-
-                if (submissionsDumpList == null){
-                    if (Main.isDebug){
-                        out.println("submissionsUrl = " + submissionsUrl);
-                        out.println("problemTitle = " + problemTitle);
-                        out.println("responseData = " + responseData);
-                        out.println("status message = " + response.message());
-                        out.println("message code = " + response.code());
+                    for (int i = 0; i < submissionsBeanList.size() && languageList.size() != 0; i++) {
+                        SubmissionBean.SubmissionsDumpBean submission = submissionsBeanList.get(i);
+                        if (submission.getStatus_display().equals("Accepted")) {
+                            String language = submission.getLang();
+                            iterator = languageList.iterator();
+                            while (iterator.hasNext()) {
+                                if (iterator.next().equals(language)) {
+                                    submissionMap.put(language, submission.getCode());
+                                    iterator.remove();
+                                    break;
+                                }
+                            }
+                        }
                     }
-                    /*
-                     * 当获取不到提交记录时休眠一小段时间后进行重复尝试,服务器返回如下信息
-                     * responseData = {"detail":"You do not have permission to perform this action."}
-                     * status message = Forbidden
-                     * message code = 403
-                     */
-                    continue;
-                }
 
-                for (int i = 0; i < submissionsDumpList.size(); i++){
-                    SubmissionBean.SubmissionsDumpBean submission = submissionsDumpList.get(i);
-                    String language = submission.getLang();
-                    if (languageMap.containsKey(language) && languageMap.get(language) == false && submission.getStatus_display().equals("Accepted")){
-                        submissionMap.put(language, submission.getCode());
-                        languageMap.put(language, true);
+                    hasNext = submissionBean.isHas_next();
+                    offset = ((offset / 10) + 1) * limit;
+                    lastKey = submissionBean.getLast_key();
+                } else {
+                    if (Main.isDebug) {
+                        out.println();
+                        out.println("problemTitleSlug : " + problemTitleSlug + " code : " + response.code() + "  message : " + response.message());
+                        out.println(response.headers().toString());
+                        out.println();
                     }
                 }
-
-                //翻页逻辑
-                hasNext = submissionBean.isHas_next();
-                offset = (offset / 10 + 1) * limit;
-                lastKey = submissionBean.getLast_key();
 
                 response.close();
-            }else{
-                //TODO
+            }
+
+            if (languageList.size() == 0) {
+                break;
             }
         }
 
         return submissionMap;
     }
 
-    /**
-     * 在 Storage 类中的 writeSubmissions2Disk 方法会对 submissionLanguageMap 填充数据
-     * 因此需要在 writeSubmissions2Disk 方法执行后调用方有效
-     * @return submissionLanguageMap 某道题对于 config 文件中指定的语言中真实提交的语言
-     */
-    public Map<Integer, List<String>>getSubmissionLanguage(){
-        if (submissionLanguageMap == null){
-            submissionLanguageMap = new ConcurrentHashMap<>();
-        }
+    public Map<Integer, List<String>> getSubmissionLanguageMap() {
         return submissionLanguageMap;
+    }
+
+    public void putData2SubmissionLanguageMap(Integer problemFrontedId, List<String> languageList) {
+        if (Main.isDebug) {
+            out.println();
+            out.println("putData2SubmissionLanguageMap + " + problemFrontedId + " " + languageList.size());
+        }
+        submissionLanguageMap.put(problemFrontedId, languageList);
+    }
+
+    public Map<String, List<ProblemBean.StatStatusPairsBean.StatBean>> getTopicsMap() {
+        return topicsMap;
+    }
+
+    public void putData2TopicsMap(List<ProblemDataBean.DataBean.QuestionBean.TopicTagsBean> topicTagsList, ProblemBean.StatStatusPairsBean.StatBean problem) {
+        for (ProblemDataBean.DataBean.QuestionBean.TopicTagsBean topic : topicTagsList) {
+            List<ProblemBean.StatStatusPairsBean.StatBean> statBeanList = topicsMap.get(topic.getName());
+            if (statBeanList != null) {
+                statBeanList.add(problem);
+            } else {
+                statBeanList = new ArrayList<>();
+                statBeanList.add(problem);
+            }
+            topicsMap.put(topic.getName(), statBeanList);
+        }
     }
 }

@@ -14,14 +14,15 @@ public final class Config {
     private String outputDir;
     private List<String> languageList;
 
-    private Config(){}
+    private Config() {
+    }
 
-    public static Config getSingleton(){
+    public static Config getSingleton() {
         Config result = instance;
-        if (result == null){
-            synchronized (Config.class){
+        if (result == null) {
+            synchronized (Config.class) {
                 result = instance;
-                if (result == null){
+                if (result == null) {
                     result = instance = new Config();
                 }
             }
@@ -34,14 +35,14 @@ public final class Config {
      * 获取 config.json 文件的数据
      */
     private ConfigBean getConfigBean() throws IOException {
-        if (configBean == null){
+        if (configBean == null) {
             StringBuilder configString = new StringBuilder();
             File file = new File("./config.json");
             FileInputStream fis = new FileInputStream(file);
             InputStreamReader reader = new InputStreamReader(fis);
             BufferedReader bufferedReader = new BufferedReader(reader);
             String line;
-            while ((line = bufferedReader.readLine()) != null){
+            while ((line = bufferedReader.readLine()) != null) {
                 configString.append(line);
             }
             bufferedReader.close();
@@ -52,28 +53,28 @@ public final class Config {
     }
 
     public String getUsername() throws IOException {
-        if (username == null){
+        if (username == null) {
             username = getConfigBean().getUsername();
         }
         return username;
     }
 
-    public String getPassword() throws IOException{
-        if (password == null){
+    public String getPassword() throws IOException {
+        if (password == null) {
             password = getConfigBean().getPassword();
         }
         return password;
     }
 
-    public List<String> getLanguageList() throws IOException{
-        if (languageList == null){
+    public List<String> getLanguageList() throws IOException {
+        if (languageList == null) {
             languageList = getConfigBean().getLanguage();
         }
         return languageList;
     }
 
-    public String getOutputDir() throws IOException{
-        if (outputDir == null){
+    public String getOutputDir() throws IOException {
+        if (outputDir == null) {
             outputDir = getConfigBean().getOutputDir();
         }
         return outputDir;

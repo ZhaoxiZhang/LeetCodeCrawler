@@ -8,8 +8,10 @@ import java.util.List;
 
 public class MyCookieJar implements CookieJar {
     private final HashMap<String, List<Cookie>> cookieStore = new HashMap<>();
+
     @Override
     public void saveFromResponse(HttpUrl httpUrl, List<Cookie> list) {
+        if (!httpUrl.url().toString().equals(URL.LOGIN)) return;
         cookieStore.put(httpUrl.host(), list);
     }
 

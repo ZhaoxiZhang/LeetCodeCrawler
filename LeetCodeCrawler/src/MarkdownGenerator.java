@@ -1,21 +1,19 @@
 import bean.ProblemBean;
+import bean.ProblemDataBean;
 import bean.ResultBean;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import static java.lang.System.out;
-
 public class MarkdownGenerator {
-    public static final String MARKDOWNTITLE = "| # | Title | Solution | Acceptance | Difficulty | Paid-Only\n" +
-            "|:--:|:-----:|:---------:|:----:|:----:|:----:|";
-    public static final String TITLE_FORM = "[%s](%s)";
-    public static final String LANGUAG_FORM = "[%s](%s) ";
-    public static final String MARKDOWN_FORM = "| %s | %s | %s | %s | %s | %s |";
+    private static volatile MarkdownGenerator instance;
+    private Result resultInstance;
+    private Problem problemInstance;
+
     public static final String SHIELD = "<p align=\"center\"><img width=\"300\" src=\"https://raw.githubusercontent.com/ZhaoxiZhang/LeetCodeCrawler/master/pictures/site-logo.png\"></p>\n\n" +
             "<p align=\"center\">\n" +
             "    <img src=\"https://img.shields.io/badge/%d/%d-Solved/Total-blue.svg\" alt=\"\">\n" +
@@ -24,78 +22,134 @@ public class MarkdownGenerator {
             "    <img src=\"https://img.shields.io/badge/Hard-%d-red.svg\" alt=\"\">\n" +
             "</p>\n\n";
 
+    private MarkdownGenerator() {
+        resultInstance = Result.getSingleton();
+        problemInstance = Problem.getSingleton();
+    }
 
-    public String generateMarkdown() throws IOException {
-        Result result = Result.getSingleton();
-        StringBuilder markdownString = new StringBuilder();
-        int easy = 0;
-        int medium = 0;
-        int hard = 0;
-        Problem problemInstance = Problem.getSingleton();
-        List<ProblemBean.StatStatusPairsBean> acProblems = problemInstance.getAllAcProblems();
-        Collections.sort(acProblems, Comparator.comparingInt(o -> o.getStat().getFrontend_question_id()));
-        Map<Integer, List<String>> submissionLanguageMap = problemInstance.getSubmissionLanguage();
-        int totalProblems = problemInstance.getFakeTotalNumProblem();
+    public static MarkdownGenerator getSingleton() {
+        MarkdownGenerator result = instance;
+        if (result == null) {
+            synchronized (MarkdownGenerator.class) {
+                result = instance;
+                if (result == null) {
+                    result = instance = new MarkdownGenerator();
+                }
+            }
+        }
+        return result;
+    }
 
-        markdownString.append(MARKDOWNTITLE + "\n");
-        for (int i = 0; i < acProblems.size(); i++) {
-            ProblemBean.StatStatusPairsBean problem = acProblems.get(i);
-            int Id = problem.getStat().getFrontend_question_id();
-            String Number = problemInstance.formId(totalProblems, Id);
-            String problemTitle = problem.getStat().getQuestion__title();
-            String problemSlug = problem.getStat().getQuestion__title_slug();
-            String Title = String.format(MarkdownGenerator.TITLE_FORM, problemTitle, "./" + Number + "." + problemSlug + "/" + problemSlug + ".md");
+    public String generateREADME() throws IOException {
+        final String READMETITLE = "| # | Title | Solution | Acceptance | Difficulty | Topics\n" +
+                "|:--:|:-----:|:---------:|:----:|:----:|:----:|";
+        final String LANGUAG_FORM = "[%s](%s) ";
+        final String TOPIC_FORM = "[%s](%s)";
+        final String TABLE_FORM = "| %s | %s | %s | %s | %s | %s |";
 
-            StringBuilder SolutionTmp = new StringBuilder();
-            List<String> languageList = submissionLanguageMap.get(Id);
+        StringBuilder markdownContent = new StringBuilder();
 
-            if (languageList == null){
-                if (Main.isDebug)   out.println("list is null id = " + Id + " title = " + problemTitle);
+        ProblemBean problemBean = problemInstance.getAllProblemsInformation();
+        List<ProblemBean.StatStatusPairsBean> acProblemList = problemInstance.getAllAcProblems();
+        acProblemList.sort(Comparator.comparingInt(o -> o.getStat().getFrontend_question_id()));
+        int fakeTotalNumProblem = problemInstance.getFakeTotalNumProblem();
+        Map<Integer, List<String>> submissionLanguageMap = problemInstance.getSubmissionLanguageMap();
+
+        String shieldString = String.format(SHIELD, problemBean.getNum_solved(), problemBean.getNum_total(), problemBean.getAc_easy(), problemBean.getAc_medium(), problemBean.getAc_hard());
+        markdownContent.append(shieldString).append("\n");
+        markdownContent.append(READMETITLE).append("\n");
+
+        for (ProblemBean.StatStatusPairsBean statStatusPairsBean : acProblemList) {
+            ProblemBean.StatStatusPairsBean.StatBean statBean = statStatusPairsBean.getStat();
+            int frontendId = statBean.getFrontend_question_id();
+            String Number = Util.formId(fakeTotalNumProblem, frontendId);
+
+            String problemTranslatedTitle = statBean.getQuestion__translated_title();
+            String problemTitle = statBean.getQuestion__title();
+            String problemSlug = statBean.getQuestion__title_slug();
+            String TITLE_FORM = "[%s](%s)";
+            String Title = String.format(TITLE_FORM, problemTitle, "./" + Number + "." + problemSlug + "/" + problemSlug + ".md");
+
+            List<String> languageList = submissionLanguageMap.get(frontendId);
+            if (languageList == null || languageList.size() == 0) {
                 continue;
             }
 
-            for (int j = 0; j < languageList.size(); j++) {
-                String language = languageList.get(j);
-                String languageSolution = String.format(MarkdownGenerator.LANGUAG_FORM, leetCodeName2LanguageName(language), "./" + Number + "." + problemSlug + "/" + problemSlug + "." + Util.languageName2FileTypeName(language));
-                SolutionTmp.append(languageSolution);
+            StringBuilder solutionTmp = new StringBuilder();
+            for (String language : languageList) {
+                String languageSolution = String.format(LANGUAG_FORM, leetCodeName2LanguageName(language), "./" + Number + "." + problemSlug + "/" + problemSlug + "." + Util.languageName2FileTypeName(language));
+                solutionTmp.append(languageSolution);
             }
-            String Solution = SolutionTmp.toString();
+            String Solution = solutionTmp.toString();
 
             DecimalFormat df = new DecimalFormat("#0.00");
-            String Acceptance = df.format((double) problem.getStat().getTotal_acs() / problem.getStat().getTotal_submitted() * 100) + "%";
+            String Acceptance = df.format((double) statBean.getTotal_acs() / statBean.getTotal_submitted() * 100) + "%";
 
-            int difficulty = problem.getDifficulty().getLevel();
-            switch (difficulty){
-                case 1:
-                    easy++;
-                    break;
-                case 2:
-                    medium++;
-                    break;
-                case 3:
-                    hard++;
-                    break;
-            }
+            int difficulty = statStatusPairsBean.getDifficulty().getLevel();
             String Difficulty = DifficultyLevel2String(difficulty);
 
-            String Paid_only = problem.isPaid_only() ? "Yes" : " ";
+            List<ProblemDataBean.DataBean.QuestionBean.TopicTagsBean> topicTags = statBean.getQuestion__topics_tags();
 
-            String row = String.format(MARKDOWN_FORM, Number, Title, Solution, Acceptance, Difficulty, Paid_only);
+            StringBuilder topicsTmp = new StringBuilder();
+            StringBuilder topicsTranslatedTmp = new StringBuilder();
+            int notNullTopicCnt = 0;
+            for (int j = 0; topicTags != null && j < topicTags.size(); j++) {
+                ProblemDataBean.DataBean.QuestionBean.TopicTagsBean topicTag = topicTags.get(j);
+                if (topicTag == null) continue;
+                notNullTopicCnt++;
+                String topic = String.format(TOPIC_FORM, topicTag.getName(), "./Topics.md#" + topicTag.getSlug());
+                if (notNullTopicCnt == 1) {
+                    topicsTmp.append(topic);
+                } else {
+                    topicsTmp.append(" &#124; ");
+                    topicsTmp.append(topic);
+                }
+            }
+            String Topics = topicsTmp.toString();
 
-            if (Main.isDebug)   out.println(row);
+            String row = String.format(TABLE_FORM, Number, Title, Solution, Acceptance, Difficulty, Topics);
 
-            markdownString.append(row + "\n");
+            markdownContent.append(row).append('\n');
 
             ResultBean savedResult = new ResultBean();
-            savedResult.setId(Id);
+            savedResult.setFrontend_id(frontendId);
             savedResult.setLanguage(languageList);
-            result.addElement2SavedResultList(savedResult);
+            savedResult.setTranslatedTitle(statBean.getQuestion__translated_title());
+            savedResult.setTopicTags(statBean.getQuestion__topics_tags());
+            resultInstance.addElement2SavedResultList(savedResult);
         }
 
-        String shieldString = String.format(SHIELD, easy + medium + hard, totalProblems, easy, medium, hard);
+        return markdownContent.toString();
+    }
 
-        markdownString.insert(0, shieldString);
-        return markdownString.toString();
+    public String generateTopics() throws IOException {
+        final String TITLE_FORM = "## %s";
+        final String LIST_FORM = "- [%s](%s)";
+
+        StringBuilder markdownContent = new StringBuilder();
+        ProblemBean problemBean = problemInstance.getAllProblemsInformation();
+        int fakeTotalNumProblem = problemInstance.getFakeTotalNumProblem();
+        Map<String, List<ProblemBean.StatStatusPairsBean.StatBean>> topicsMap = problemInstance.getTopicsMap();
+        List<String> topicsNameList = new ArrayList<>(topicsMap.keySet());
+        topicsNameList.sort(Comparator.naturalOrder());
+
+        String shieldString = String.format(SHIELD, problemBean.getNum_solved(), problemBean.getNum_total(), problemBean.getAc_easy(), problemBean.getAc_medium(), problemBean.getAc_hard());
+        markdownContent.append(shieldString).append("\n");
+
+        for (String topicName : topicsNameList) {
+            markdownContent.append(String.format(TITLE_FORM, topicName)).append("\n");
+
+            List<ProblemBean.StatStatusPairsBean.StatBean> statBeanList = topicsMap.get(topicName);
+            statBeanList.sort(Comparator.comparingInt(ProblemBean.StatStatusPairsBean.StatBean::getFrontend_question_id));
+            for (ProblemBean.StatStatusPairsBean.StatBean statBean : statBeanList) {
+                int frontendId = statBean.getFrontend_question_id();
+                String problemSlug = statBean.getQuestion__title_slug();
+                String Number = Util.formId(fakeTotalNumProblem, frontendId);
+                markdownContent.append(String.format(LIST_FORM, statBean.getQuestion__title(), "./" + Number + "." + problemSlug)).append("\n");
+            }
+        }
+
+        return markdownContent.toString();
     }
 
     private String leetCodeName2LanguageName(String leetcodeName) {

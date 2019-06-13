@@ -13,16 +13,16 @@ public class Result {
     //记录本次爬取的结果保存到本地
     private List<ResultBean> savedResultList;
 
-    private Result(){
+    private Result() {
         savedResultList = new ArrayList<>();
     }
 
-    public static Result getSingleton(){
+    public static Result getSingleton() {
         Result result = instance;
-        if (result == null){
-            synchronized (Result.class){
+        if (result == null) {
+            synchronized (Result.class) {
                 result = instance;
-                if (result == null){
+                if (result == null) {
                     result = instance = new Result();
                 }
             }
@@ -31,9 +31,9 @@ public class Result {
     }
 
     public List<ResultBean> getRestoredResultList() throws IOException {
-        if (restoredResultList == null){
+        if (restoredResultList == null) {
             File file = new File(Storage.outputDir + "/result.json");
-            if (!file.exists()){
+            if (!file.exists()) {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
             }
@@ -50,11 +50,11 @@ public class Result {
         return restoredResultList;
     }
 
-    public void addElement2SavedResultList(ResultBean resultBean){
+    public void addElement2SavedResultList(ResultBean resultBean) {
         savedResultList.add(resultBean);
     }
 
-    public List<ResultBean> getSavedResultList(){
+    public List<ResultBean> getSavedResultList() {
         return savedResultList;
     }
 

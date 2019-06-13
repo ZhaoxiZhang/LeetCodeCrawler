@@ -1,0 +1,4 @@
+public class GraphQL {
+    public final static String questionData = "{\"operationName\":\"questionData\",\"variables\":{\"titleSlug\":\"%s\"},\"query\":\"query questionData($titleSlug: String!) {question(titleSlug: $titleSlug) {title    content    translatedTitle    translatedContent    topicTags {name      slug      translatedName}}}\"}";
+    public final static String questionSubmissions = "{\"operationName\":\"Submissions\",\"variables\":{\"offset\":%d,\"limit\":%d,\"lastKey\":\"%s\",\"questionSlug\":\"%s\"},\"query\":\"query Submissions($offset: Int!, $limit: Int!, $lastKey: String, $questionSlug: String!) {  submissionList(offset: $offset, limit: $limit, lastKey: $lastKey, questionSlug: $questionSlug) {    lastKey    hasNext    submissions {id      statusDisplay      lang      runtime      timestamp      url      isPending      memory}    }}\"}";
+}

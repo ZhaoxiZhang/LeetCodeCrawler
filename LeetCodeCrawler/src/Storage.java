@@ -1,11 +1,15 @@
 import bean.ProblemBean;
-import bean.ProblemContentBean;
 import bean.ResultBean;
 import com.google.gson.Gson;
-import okhttp3.*;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -13,73 +17,93 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.System.out;
 
 public class Storage {
-    private OkHttpHelper okHttpHelper = OkHttpHelper.getSingleton();
 
     public static String outputDir = ".";
 
+    private static volatile Storage instance;
+    private Problem problemInstance;
+    private Result resultInstance;
+    private MarkdownGenerator markdownGeneratorInstance;
+
+    private Storage() {
+        problemInstance = Problem.getSingleton();
+        resultInstance = Result.getSingleton();
+        markdownGeneratorInstance = MarkdownGenerator.getSingleton();
+    }
+
+    public static Storage getSingleton() {
+        Storage result = instance;
+        if (result == null) {
+            synchronized (Storage.class) {
+                result = instance;
+                if (result == null) {
+                    result = instance = new Storage();
+                }
+            }
+        }
+        return result;
+    }
+
     public void write2Disk(List<ProblemBean.StatStatusPairsBean> acProblemList) throws IOException, InterruptedException {
-        Problem problem = Problem.getSingleton();
-        Result result = Result.getSingleton();
-        List<ResultBean>restoredResultList = result.getRestoredResultList();
+        List<ResultBean> restoredProblemList = resultInstance.getRestoredResultList();
 
         //按题目 Id 从小到大排序
-        Collections.sort(acProblemList, Comparator.comparingInt(o -> o.getStat().getFrontend_question_id()));
+        acProblemList.sort(Comparator.comparingInt(o -> o.getStat().getFrontend_question_id()));
         //按题目 Id 从小到大排序
-        Collections.sort(restoredResultList, (Comparator.comparingInt(ResultBean::getId)));
+        restoredProblemList.sort((Comparator.comparingInt(ResultBean::getFrontend_id)));
 
-        int totalProblems = problem.getFakeTotalNumProblem();
+        int fakeTotalNumProblem = problemInstance.getFakeTotalNumProblem();
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         ExecutorService fixedThreadPool = Executors.newFixedThreadPool(2 * availableProcessors);
 
-        int restoredResultIndex = 0;
-        for (int i = 0; i < acProblemList.size(); i++) {
-            //查找已经 AC 的题目在之前是否有数据保存在本地
-            boolean hasExist = false;
+        int restoredProblemIndex = 0;
+        for (ProblemBean.StatStatusPairsBean statStatusPairsBean : acProblemList) {
+            boolean hasExisted = false;
             ResultBean resultBean = null;
-            if (restoredResultIndex < restoredResultList.size()){
-                int restoredResultIndexId = restoredResultList.get(restoredResultIndex).getId();
-                int acProblemListIndexId = acProblemList.get(i).getStat().getFrontend_question_id();
+            if (restoredProblemIndex < restoredProblemList.size()) {
+                int restoredProblemFrontedId = restoredProblemList.get(restoredProblemIndex).getFrontend_id();
+                int acProblemFrontedId = statStatusPairsBean.getStat().getFrontend_question_id();
 
-                if (restoredResultIndexId == acProblemListIndexId){
-                    hasExist = true;
-                    restoredResultIndex++;
+                if (restoredProblemFrontedId == acProblemFrontedId) {
+                    hasExisted = true;
+                    restoredProblemIndex++;
                 }
 
-                resultBean = hasExist ? restoredResultList.get(restoredResultIndex - 1) : null;
+                resultBean = hasExisted ? restoredProblemList.get(restoredProblemIndex - 1) : null;
             }
 
-            int finalI = i;
-            boolean finalHasExist = hasExist;
+            ProblemBean.StatStatusPairsBean.StatBean statBean = statStatusPairsBean.getStat();
+            int problemFrontedId = statBean.getFrontend_question_id();
+            String problemTitleSlug = statBean.getQuestion__title_slug();
+            String formFrontedId = Util.formId(fakeTotalNumProblem, problemFrontedId);
+            String problemDirectory = outputDir + "/" + formFrontedId + "." + problemTitleSlug;
+
+            boolean finalHasExisted = hasExisted;
             ResultBean finalResultBean = resultBean;
             fixedThreadPool.execute(() -> {
-                ProblemBean.StatStatusPairsBean problemStatStatus = acProblemList.get(finalI);
-                int problemId = problemStatStatus.getStat().getFrontend_question_id();
-                String problemTitle = problemStatStatus.getStat().getQuestion__title_slug();
-                String formId = problem.formId(totalProblems, problemId);
-                String problemDirectory = outputDir + "/" + formId + "." + problemTitle;
 
-                //之前未保存本地的题目进行写入
-                if (finalHasExist == false){
-                    //创建题目目录
+                if (!finalHasExisted) {
                     createDirectory(problemDirectory);
 
-                    //写入题目
                     try {
-                        writeProblem2Disk(problemTitle, problemDirectory);
+                        writeProblemDescription2Disk(statBean, problemDirectory, problemTitleSlug);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                } else {
+                    statBean.setQuestion__translated_title(finalResultBean.getTranslatedTitle());
+                    statBean.setQuestion__topics_tags(finalResultBean.getTopicTags());
+                    problemInstance.putData2TopicsMap(finalResultBean.getTopicTags(), statBean);
                 }
 
-                //写入代码
                 try {
-                    writeSubmissions2Disk(problem, problemId, problemTitle, problemDirectory, finalResultBean);
+                    writeSubmissions2Disk(problemDirectory, problemFrontedId, problemTitleSlug, finalResultBean);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                out.println(formId + "-[" + problemStatStatus.getStat().getQuestion__title() + "] finished");
-            });
 
+                out.println(formFrontedId + "-[" + statBean.getQuestion__title() + "] finished");
+            });
         }
 
         fixedThreadPool.shutdown();
@@ -87,12 +111,12 @@ public class Storage {
         fixedThreadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
         //写入Markdown
-        MarkdownGenerator markdownGenerator = new MarkdownGenerator();
-        writeMarkdown2Disk(markdownGenerator.generateMarkdown());
+        writeMarkdown2Disk("Topics", markdownGeneratorInstance.generateTopics());
+        writeMarkdown2Disk("README", markdownGeneratorInstance.generateREADME());
 
         //写入 result.json
         Gson gson = new Gson();
-        List<ResultBean>savedResultList = result.getSavedResultList();
+        List<ResultBean> savedResultList = resultInstance.getSavedResultList();
         String savedResultListString = gson.toJson(savedResultList);
         writeResult2Disk(savedResultListString);
 
@@ -127,55 +151,34 @@ public class Storage {
         bos.close();
     }
 
-    private void writeSubmission2Disk(String problemTitle, String problemDirectory, String type, String code) throws IOException {
-        writeUtil(problemDirectory + "/" + problemTitle + "." + Util.languageName2FileTypeName(type), code);
+    public void writeProblemDescription2Disk(ProblemBean.StatStatusPairsBean.StatBean statBean, String problemDirectory, String problemTitleSlug) throws IOException {
+        String problemDescription = problemInstance.getProblemDescription(statBean);
+        writeUtil(problemDirectory + "/" + problemTitleSlug + ".md", problemDescription);
     }
 
-    public void writeProblem2Disk(String problemTitle, String problemDirectory) throws IOException{
-        String postBody = "query{question(titleSlug:\"" + problemTitle + "\") {content}}\n";
-        RequestBody requestBody = RequestBody.create(MediaType.parse("application/graphql; charset=utf-8"), postBody);
-        Headers headers = new Headers.Builder()
-                .add("Content-Type", "application/graphql")
-                .add("Referer", "https://leetcode.com/problems/" + problemTitle)
-                .add("Cookie", "__cfduid=" + Login.__cfduid + ";" + "csrftoken=" + Login.csrftoken + ";" + "LEETCODE_SESSION=" + Login.LEETCODE_SESSION)
-                .add("x-csrftoken", Login.csrftoken)
-                .build();
-
-        okHttpHelper.postAsync(URL.GRAPHQL, requestBody, headers, new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                out.println("获取题目题意信息失败");
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String graphqlResponseBodyString = response.body().string();
-                ProblemContentBean problemContentBean = okHttpHelper.fromJson(graphqlResponseBodyString, ProblemContentBean.class);
-                String problemDescription = problemContentBean.getData().getQuestion().getContent();
-                writeUtil(problemDirectory + "/" + problemTitle + ".md", problemDescription);
-                response.close();
-            }
-        });
+    public void writeSubmission2Disk(String problemDirectory, String problemTitleSlug, String code, String type) throws IOException {
+        writeUtil(problemDirectory + "/" + problemTitleSlug + "." + Util.languageName2FileTypeName(type), code);
     }
 
-    public void writeSubmissions2Disk(Problem problem, int problemId, String problemTitle, String problemDirectory, ResultBean resultBean) throws IOException{
-        Map<String, String> submissionMap = problem.getSubmissions(problemTitle, resultBean);
+    public void writeSubmissions2Disk(String problemDirectory, int problemFrontedId, String problemTitleSlug, ResultBean resultBean) throws IOException {
         List<String> submissionLanguageList;
-        if (resultBean != null){
+        if (resultBean != null) {
             submissionLanguageList = new ArrayList<>(resultBean.getLanguage());
-        }else {
+        } else {
             submissionLanguageList = new ArrayList<>();
         }
+
+        Map<String, String> submissionMap = problemInstance.getSubmissions(problemTitleSlug, resultBean);
         for (Map.Entry<String, String> entry : submissionMap.entrySet()) {
-            writeSubmission2Disk(problemTitle, problemDirectory, entry.getKey(), entry.getValue());
+            writeSubmission2Disk(problemDirectory, problemTitleSlug, entry.getValue(), entry.getKey());
             submissionLanguageList.add(entry.getKey());
         }
-        problem.getSubmissionLanguage().put(problemId, submissionLanguageList);
+
+        problemInstance.putData2SubmissionLanguageMap(problemFrontedId, submissionLanguageList);
     }
 
-    public void writeMarkdown2Disk(String markdownString) throws IOException {
-        writeUtil(outputDir + "/README.md", markdownString);
+    public void writeMarkdown2Disk(String fileName, String markdownContent) throws IOException {
+        writeUtil(outputDir + "/" + fileName + ".md", markdownContent);
     }
 
     public void writeResult2Disk(String savedResultListString) throws IOException {

@@ -3,6 +3,7 @@ package bean;
 import java.util.List;
 
 public class ProblemBean {
+
     /**
      * user_name : xxx
      * num_solved : xxx
@@ -200,7 +201,9 @@ public class ProblemBean {
             private boolean question__article__live;
             private String question__article__slug;
             private String question__title;
+            private String question__translated_title;
             private String question__title_slug;
+            private List<ProblemDataBean.DataBean.QuestionBean.TopicTagsBean> question__topics_tags;
             private boolean question__hide;
             private int total_acs;
             private int total_submitted;
@@ -239,12 +242,28 @@ public class ProblemBean {
                 this.question__title = question__title;
             }
 
+            public String getQuestion__translated_title() {
+                return question__translated_title;
+            }
+
+            public void setQuestion__translated_title(String question__translated_title) {
+                this.question__translated_title = question__translated_title;
+            }
+
             public String getQuestion__title_slug() {
                 return question__title_slug;
             }
 
             public void setQuestion__title_slug(String question__title_slug) {
                 this.question__title_slug = question__title_slug;
+            }
+
+            public List<ProblemDataBean.DataBean.QuestionBean.TopicTagsBean> getQuestion__topics_tags() {
+                return question__topics_tags;
+            }
+
+            public void setQuestion__topics_tags(List<ProblemDataBean.DataBean.QuestionBean.TopicTagsBean> question__topics_tags) {
+                this.question__topics_tags = question__topics_tags;
             }
 
             public boolean isQuestion__hide() {

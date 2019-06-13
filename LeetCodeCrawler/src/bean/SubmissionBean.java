@@ -3,10 +3,11 @@ package bean;
 import java.util.List;
 
 public class SubmissionBean {
+
     /**
-     * submissions_dump : [{"id":1916359**,"lang":"java","time":"6 months, 1 week","timestamp":15435320**,"status_display":"Accepted","runtime":"4 ms","url":"/submissions/detail/1917359**","is_pending":"Not Pending","title":"Two Sum","memory":"N/A","code":"class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        int[] res = new int[2];\n        Map<Integer,Integer>map = new HashMap<>(nums.length);\n        for (int i = 0; i < nums.length; i++)   map.put(nums[i], i);\n        for (int i = 0; i < nums.length; i++){\n            if (map.get(target - nums[i]) != null && i != map.get(target - nums[i])){\n                res[0] = map.get(target - nums[i]);\n                res[1] = i;\n                break;\n            }\n        }\n        return res;\n    }\n}","compare_result":"11111111111111111111111111111"}]
-     * has_next : true
-     * last_key : %7D%7D
+     * submissions_dump : [{"id":83896xx,"lang":"cpp","time":"1 年，10 月","status_display":"Accepted","runtime":"12 ms","url":"/submissions/detail/83896xx/","is_pending":"Not Pending","title":"两数之和","timestamp":01939994xx,"memory":"N/A","code":"class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        vector<int>res;\n        map<int,int>mp;\n        for (unsigned int i = 0;i < nums.size();i++){\n            mp[nums[i]] = i;\n        }\n        for (unsigned int i = 0;i < nums.size();i++){\n            if (mp.find(target - nums[i]) != mp.end() && i != mp[target - nums[i]]){\n                res.push_back(i);\n                res.push_back(mp[target-nums[i]]);\n                return res;\n            }\n        }\n    }\n};","compare_result":"1111111111111111111"}]
+     * has_next : false
+     * last_key : x1dqoqxx
      */
 
     private boolean has_next;
@@ -39,43 +40,45 @@ public class SubmissionBean {
 
     public static class SubmissionsDumpBean {
         /**
-         * id : 1916359**
-         * lang : java
-         * time : 6 months, 1 week
-         * timestamp : 15435320**
+         * id : 83896xx
+         * lang : cpp
+         * time : 1 年，10 月
          * status_display : Accepted
-         * runtime : 4 ms
-         * url : /submissions/detail/1917359**
+         * runtime : 12 ms
+         * url : /submissions/detail/83896xx/
          * is_pending : Not Pending
-         * title : Two Sum
+         * title : 两数之和
+         * timestamp : 01939994xx
          * memory : N/A
          * code : class Solution {
-             public int[] twoSum(int[] nums, int target) {
-                int[] res = new int[2];
-                Map<Integer,Integer>map = new HashMap<>(nums.length);
-                for (int i = 0; i < nums.length; i++)   map.put(nums[i], i);
-                for (int i = 0; i < nums.length; i++){
-                    if (map.get(target - nums[i]) != null && i != map.get(target - nums[i])){
-                        res[0] = map.get(target - nums[i]);
-                        res[1] = i;
-                        break;
-                    }
-                }
-                return res;
-             }
-         }
-         * compare_result : 11111111111111111111111111111
+         * public:
+         * vector<int> twoSum(vector<int>& nums, int target) {
+         * vector<int>res;
+         * map<int,int>mp;
+         * for (unsigned int i = 0;i < nums.size();i++){
+         * mp[nums[i]] = i;
+         * }
+         * for (unsigned int i = 0;i < nums.size();i++){
+         * if (mp.find(target - nums[i]) != mp.end() && i != mp[target - nums[i]]){
+         * res.push_back(i);
+         * res.push_back(mp[target-nums[i]]);
+         * return res;
+         * }
+         * }
+         * }
+         * };
+         * compare_result : 1111111111111111111
          */
 
         private int id;
         private String lang;
         private String time;
-        private int timestamp;
         private String status_display;
         private String runtime;
         private String url;
         private String is_pending;
         private String title;
+        private int timestamp;
         private String memory;
         private String code;
         private String compare_result;
@@ -102,14 +105,6 @@ public class SubmissionBean {
 
         public void setTime(String time) {
             this.time = time;
-        }
-
-        public int getTimestamp() {
-            return timestamp;
-        }
-
-        public void setTimestamp(int timestamp) {
-            this.timestamp = timestamp;
         }
 
         public String getStatus_display() {
@@ -150,6 +145,14 @@ public class SubmissionBean {
 
         public void setTitle(String title) {
             this.title = title;
+        }
+
+        public int getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(int timestamp) {
+            this.timestamp = timestamp;
         }
 
         public String getMemory() {

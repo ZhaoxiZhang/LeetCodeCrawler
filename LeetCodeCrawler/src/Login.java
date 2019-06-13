@@ -4,7 +4,6 @@ import org.jsoup.Jsoup;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static java.lang.System.out;
 
@@ -16,14 +15,15 @@ public class Login {
     public static String __cfduid;
     public static String LEETCODE_SESSION;
 
-    private OkHttpHelper okHttpHelper;
+    private OkHttpHelper okHttpHelerInstance;
 
     private String usrname;
     private String passwd;
-    public Login(String usrname, String passwd){
+
+    public Login(String usrname, String passwd) {
         this.usrname = usrname;
         this.passwd = passwd;
-        okHttpHelper = OkHttpHelper.getSingleton();
+        okHttpHelerInstance = OkHttpHelper.getSingleton();
     }
 
 
@@ -35,17 +35,12 @@ public class Login {
         Connection.Response response = Jsoup.connect(URL.LOGIN)
                 .method(Connection.Method.GET)
                 .execute();
-
         csrftoken = response.cookie("csrftoken");
         __cfduid = response.cookie("__cfduid");
 
-        OkHttpClient client = new OkHttpClient.Builder()
+        OkHttpClient client = okHttpHelerInstance.getOkHttpClient().newBuilder()
                 .followRedirects(false)
                 .followSslRedirects(false)
-                .cookieJar(new MyCookieJar())
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
 
         String form_data = "--" + boundary + "\r\n"
@@ -64,38 +59,36 @@ public class Login {
 
         RequestBody requestBody = RequestBody.create(MULTIPART, form_data);
 
-        Request request = new Request.Builder()
-                .addHeader("Content-Type", "multipart/form-data; boundary=" + boundary)
-                .addHeader("Connection","keep-alive")
-                .addHeader("Accept","*/*")
-                .addHeader("Origin","https://leetcode.com")
-                .addHeader("Referer",URL.LOGIN)
-                .addHeader("Cookie","__cfduid=" + __cfduid + ";" + "csrftoken=" + csrftoken)
-                .post(requestBody)
-                .url(URL.LOGIN)
+        Headers headers = new Headers.Builder()
+                .add("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .add("Connection", "keep-alive")
+                .add("Accept", "*/*")
+                .add("Origin", URL.HOME)
+                .add("Referer", URL.LOGIN)
+                .add("Cookie", "__cfduid=" + __cfduid + ";" + "csrftoken=" + csrftoken)
                 .build();
 
-        Response loginResponse = client.newCall(request).execute();
+        Response loginResponse = okHttpHelerInstance.postSync(URL.LOGIN, requestBody, headers, client);
 
-        if (Main.isDebug)   out.println(loginResponse.message());
+        if (Main.isDebug) out.println(loginResponse.message());
 
-        Headers headers = loginResponse.headers();
-        List<String>cookies = headers.values("Set-Cookie");
-        for (String cookie : cookies){
+        headers = loginResponse.headers();
+        List<String> cookies = headers.values("Set-Cookie");
+        for (String cookie : cookies) {
             int found = cookie.indexOf("LEETCODE_SESSION");
-            if (found > -1){
-                if (Main.isDebug)   out.println(cookie);
+            if (found > -1) {
+                if (Main.isDebug) out.println(cookie);
                 int last = cookie.indexOf(";");
                 LEETCODE_SESSION = cookie.substring("LEETCODE_SESSION".length() + 1, last);
-                if (Main.isDebug)   out.println(LEETCODE_SESSION);
+                if (Main.isDebug) out.println(LEETCODE_SESSION);
             }
         }
 
 
-        if (LEETCODE_SESSION != null){
+        if (LEETCODE_SESSION != null) {
             success = true;
             out.println("Login Successfully");
-        }else{
+        } else {
             success = false;
             out.println("Login Unsuccessfully");
         }

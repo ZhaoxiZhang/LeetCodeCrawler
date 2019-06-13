@@ -1,6 +1,5 @@
 import com.google.gson.Gson;
 import okhttp3.*;
-import okhttp3.internal.http2.Header;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -11,22 +10,23 @@ public final class OkHttpHelper {
     private Gson gson;
 
 
-    private OkHttpHelper(){
+    private OkHttpHelper() {
         okHttpClient = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .cookieJar(new MyCookieJar())
+                .connectTimeout(0, TimeUnit.SECONDS)
+                .readTimeout(0, TimeUnit.SECONDS)
+                .writeTimeout(0, TimeUnit.SECONDS)
                 .build();
 
         gson = new Gson();
     }
 
-    public static OkHttpHelper getSingleton(){
+    public static OkHttpHelper getSingleton() {
         OkHttpHelper result = okHttpHelperInstance;
-        if (result == null){
-            synchronized (OkHttpHelper.class){
+        if (result == null) {
+            synchronized (OkHttpHelper.class) {
                 result = okHttpHelperInstance;
-                if (result == null){
+                if (result == null) {
                     result = okHttpHelperInstance = new OkHttpHelper();
                 }
             }
@@ -34,39 +34,45 @@ public final class OkHttpHelper {
         return result;
     }
 
-    private Response getInternal(String url, Headers headers) throws IOException {
+    public OkHttpClient getOkHttpClient() {
+        return okHttpClient;
+    }
+
+    public Response getSync(String url) throws IOException {
+        return getSync(url, null);
+    }
+
+    public Response getSync(String url, Headers headers) throws IOException {
         Request request = new Request.Builder()
-                .headers(headers)
                 .url(url)
+                .get()
                 .build();
+
+        if (headers != null) {
+            request.newBuilder().headers(headers)
+                    .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36");
+        }
+
         Call call = okHttpClient.newCall(request);
         return call.execute();
     }
 
-    private Response postInternal(String url, RequestBody requestBody, Headers headers) throws IOException {
+    public Response postSync(String url, RequestBody requestBody, Headers headers) throws IOException {
+        return postSync(url, requestBody, headers, okHttpClient);
+    }
+
+    public Response postSync(String url, RequestBody requestBody, Headers headers, OkHttpClient client) throws IOException {
         Request request = new Request.Builder()
                 .headers(headers)
+                .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36")
                 .post(requestBody)
                 .url(url)
                 .build();
-        Call call = okHttpClient.newCall(request);
+        Call call = client.newCall(request);
         return call.execute();
     }
 
-    public Response get(String url, Headers headers) throws IOException {
-        return getInternal(url, headers);
-    }
-
-    public Response post(String url, RequestBody requestBody, Headers headers) throws IOException {
-        return postInternal(url, requestBody, headers);
-    }
-
-
-    public <T> T fromJson(String json, Class<T> classOfT) {
-        return gson.fromJson(json, classOfT);
-    }
-
-    public void postAsync(String url, RequestBody requestBody, Headers headers, Callback callback){
+    public void postAsync(String url, RequestBody requestBody, Headers headers, Callback callback) {
         Request request = new Request.Builder()
                 .headers(headers)
                 .post(requestBody)
@@ -84,5 +90,9 @@ public final class OkHttpHelper {
                 callback.onResponse(call, response);
             }
         });
+    }
+
+    public <T> T fromJson(String json, Class<T> classOfT) {
+        return gson.fromJson(json, classOfT);
     }
 }
