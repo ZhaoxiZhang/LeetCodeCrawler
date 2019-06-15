@@ -1,14 +1,16 @@
 # LeetCodeCrawler
 
-## 概述
-一个爬取 LeetCode 题目内容以及提交的AC代码的工具，并支持生成相应的 README.md 文件，美化你的 LeetCode 仓库的README。
+## Overview
+A tool for crawling the description and accepted submitted code of problems on the [LeetCode](https://leetcode.com/) and [LeetCode-Cn](https://leetcode-cn.com/) website. The tool supports to generate README.md and Topics.md files to beautify your README of LeetCode repository.
 
-本项目启发自[leetcode-spider](https://github.com/Ma63d/leetcode-spider),其使用 JavaScript 编写，因不再继续维护，且本人暂时对 JavaScript 未过多了解，因此用 Java 重实现了爬取。
+This project is inspired by [leetcode-spider](https://github.com/Ma63d/leetcode-spider), which is written in JavaScript. It is no longer maintained, and I don't know much about JavaScript for a while, thus I implement crawling with Java.
 
-## 使用
-下载[LeetCodeCrawler.jar](https://github.com/ZhaoxiZhang/LeetCodeCrawler/raw/master/LeetCodeCrawler.jar)到本地
+## Usage
+For the [LeetCode](https://leetcode.com/) website, download [LeetCodeCrawler.jar](https://github.com/ZhaoxiZhang/LeetCodeCrawler/blob/master/LeetCodeCrawler/LeetCodeCrawler.jar) to your local.
 
-建立好如下`config.json`文件（可直接对 repo 的`config.json`进行更改)，`config.json`文件需与`LeetCodeCrawler.jar`放置于同一目录下：
+For the [LeetCode-Cn](https://leetcode-cn.com/) website, download [Cn-LeetCodeCrawler](https://github.com/ZhaoxiZhang/LeetCodeCrawler/blob/master/Cn-LeetCodeCrawler/Cn-LeetCodeCrawler.jar) to your local.
+
+Create the `config.json` file as shown below(you can modify the `config.json` in the repo directly), the `config.json` file should be placed in the same directory as `LeetCodeCrawler.jar` or `Cn-LeetCodeCrawler.jar`:
 ```
 {
     "username": "leetcode@leetcode",
@@ -17,8 +19,8 @@
     "outputDir": "."
 }
 ```
-- `username`和`password`对应你的 LeetCode 账号和密码
-- `language`对应于你在 LeetCode 刷题使用的编程语言，可多选，选填字段如下（**请严格按照如下字段填写**）：
+- `username` and `password` correspond to the account and password on the website.
+- `language` corresponds to the programming language you use in the website. You can select multiple fields, the optional fields are shown as follow(**Please fill in the corresponding fields strictly as follow**):
     - cpp
     - java
     - c
@@ -31,12 +33,13 @@
     - golang
     - scala
     - kotlin
-- `outputDir`字段表示你希望存放源码文件的目录,默认为`.`，即当前目录
+- The `outputDir` field indicates the directory where you want to store the resources crawled by the tool. The default is `.`, which means the current directory.
 
-运行`java -jar LeetCodeCrawler.jar`
+run command `java -jar LeetCodeCrawler.jar` or `java -jar Cn-LeetCodeCrawler.jar`
 
-## 效果
-具体效果以及爬取的具体数据可参看我的repo：[LeetCode](https://github.com/ZhaoxiZhang/Algorithm/tree/master/LeetCode), 自己使用的这个工具爬取的 LeetCode 题目和提交的源码。
+## Result
+you can see the result for crawling in my repository：[LeetCode](https://github.com/ZhaoxiZhang/Algorithm/tree/master/LeetCode).
 <img src="./pictures/1.png"/>
 <img src="./pictures/2.png"/>
 <img src="./pictures/3.png"/>
+<img src="./pictures/4.png"/>
